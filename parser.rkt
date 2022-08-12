@@ -19,11 +19,6 @@
              [`(Sym ,symb) 
               (match symb
                 [(or '+ '- '* '/ '^) (build-sexp-list (cons symb lst))]
-                ;['+ (build-sexp-list (cons symb lst))]
-                ;['- (build-sexp-list (cons symb lst))]
-                ;['* (build-sexp-list (cons symb lst))]
-                ;['/ (build-sexp-list (cons symb lst))]
-                ;['^ (build-sexp-list (cons symb lst))]
                 [_ (build-sexp-list (cons symb lst))]
                 )]
              
@@ -53,7 +48,6 @@
                 ['|=| (build-sexp-list (cons '= lst))]
                 )]
 
-          
              [`(Char ,chr)
               (build-sexp-list (cons chr lst))]
              
