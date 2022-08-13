@@ -74,3 +74,10 @@
     
    ; returning null on eof
    [(eof) '()]))
+
+; test lexer
+#;
+(begin
+  (define in (open-input-string "(+ 420 (* 2 (/ 3 3)))"))
+  (lex in)
+  (lex in))

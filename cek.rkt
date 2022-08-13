@@ -139,18 +139,5 @@
   
   (eval prog prims 'mt))
 
-; (cek-interp '(+ 420 (* 2 (/ 3 3))))
-; (cek-interp '((λ (x) x) (if #f 1 2)))
-; (cek-interp '(if #t #f #t))
-; (cek-interp '((lambda (x) x) 1))
-; (cek-interp '((lambda () 5)))
-; (cek-interp '((λ (a b c) b) 1 2 3))
-; ;(cek-interp '((λ (q) (λ (b) q)) (λ (z) z)))
-; (cek-interp '((lambda x (cdr x)) 1 2 3))
-; (cek-interp '(list 1 2 3 (list 4 5) 6))
-; (cek-interp '((lambda a (cons 5 a)) 0 1 2 3 4))
-; (cek-interp '(apply + (list 1 3 4)))
-; (cek-interp '(apply (lambda x (cdr x)) (list 1 3 4)))
-; (cek-interp '(apply (lambda (a b c) b) (list 1 (list 5 6) 4)))
-;(cek-interp '(and #t #t))
-;(cek-interp '(if #t #f #t))
+; test interpreter
+;(cek-interp '(+ 420 (* 2 (/ 3 3))))
