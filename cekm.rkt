@@ -48,8 +48,7 @@
 
 
       [`(newPrompt)
-       (ret (string->symbol (symbol->string
-                             (gensym 'prompt))) kont m-kont)]
+       (ret `(prompt ,(gensym 'prompt)) kont m-kont)]
 
       [`(pushPrompt ,ea ,eb)
        (eval ea env `(pushPromptk ,eb ,env ,kont) m-kont)]
@@ -73,11 +72,25 @@
 
 
       [else (raise `(Error occured in eval function!...State: ,exp ,env ,kont ,m-kont))]))
+
+  (define (split-k kont prompt)
+    (let loop ([Kup `()]
+               [Klatest kont])
+      (if (equal? (car Klatest) prompt)
+          (cons (reverse Kup) (cdr Klatest))
+          (loop (cons (car Klatest) Kup) (cdr Klatest)))))
+    
+    
   
   (define (ret val kont m-kont)
     (displayln (~a ">>>ret  : " (list '--val: val '--kont: kont '--m-kont: m-kont)))
     (match kont
-      ['mt val]
+      ;['mt val]
+      [`mt
+       (match m-kont
+         ['() val]
+         [`(,k . ,mk)
+          (ret val k mk)])]
 
       [`(ifk ,texp ,fexp ,env ,kont)
        (if val
@@ -92,7 +105,8 @@
        (eval ef env `(withSubContκ ,val () ,env ,kont) m-kont)]
 
       [`(withSubContκ ,prmpt () ,env ,this_kont)
-       'todo-split???
+       (match-define (cons Kup Kdown) (split-k m-kont prmpt))
+       (apply val (list `(kont ,(cons this_kont Kup))) 'mt Kdown)
        
        ; p = new_prompt
        ; : = cons
@@ -108,11 +122,12 @@
        
        ; before sequence Ep_up, after sequence Ep_down
        ;(ret before_seq `(app-k `(,val) ,env 'mt) after_seq)
+
        ]
 
       [`(pushSubContκ ,eb ,env ,kont)
        ; `todo??
-       (eval eb env 'mt (append val (cons kont m-kont)))]
+       (eval eb env 'mt (append (second val) (cons kont m-kont)))]
       
 
       [`(apply-ark ,ea ,env ,kont)
@@ -147,25 +162,26 @@
 
       [else (raise `(Error occured in apply function!...State: ,vf ,va-list ,kont ,m-kont))]))
   
-  (eval prog prims 'mt 'mkt))
+  (eval prog prims 'mt '()))
 
 ; test interpreter
 ;(cek-interp '(+ 420 2))
 
-#;(cek-interp '((λ (p)
+#;
+(cek-interp '((λ (p)
                   (pushPrompt p
                               (+ 1
                                  (withSubCont p (λ (k) (+ 2 1))))))
                 (newPrompt)))
 
-(cek-interp
+#;(cek-interp
  '(+ 2 
      (let ([p (newPrompt)])
        (pushPrompt p
                    (+ 1 (withSubCont p
                                      (λ (k) 2)))))))
 
-#;(cek-interp '((λ (p)
+(cek-interp '((λ (p)
                   (+ 2
                      (pushPrompt p
                                  (if (withSubCont p

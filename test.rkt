@@ -52,3 +52,6 @@
             (displayln (~a "case  : " x "\noutput: " (cek-interp (parse (open-input-string x))) "\n")))
           test-cases)
 
+
+
+
