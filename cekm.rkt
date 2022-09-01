@@ -1,13 +1,13 @@
 #lang racket
 
-(provide cek-interp)
+(provide cekm-interp)
 
 (require "parser.rkt")
 
 (require (rename-in racket/base (eval racket-eval)))
          
-;(define default-prims '(* + - / expt = car cdr cons equal? null?))
-(define default-prims '(+)); - / expt = car cdr cons equal? null?))
+(define default-prims '(* + - / expt = car cdr cons equal? null?))
+;(define default-prims '(+ = equal?)); - / expt = car cdr cons equal? null?))
 
 (define prims
   (foldl (lambda (op env)
@@ -18,7 +18,7 @@
 (define (racket-apply proc lst)
   (apply proc lst))
 
-(define (cek-interp prog)
+(define (cekm-interp prog)
   ; Helper function to check if symbol λ or tag lambda
   (define (λ-or-lambda? str)
     (match str
@@ -26,11 +26,16 @@
       [else #f]))
   
   (define (eval exp env kont m-kont)
-    (displayln (~a "\n>>>eval : " (list '--exp: exp '--env: env '--kont: kont)))
+    ;(displayln (~a "\n>>>eval : " (list '--exp: exp '--env: env '--kont: kont)))
     (match exp  
       [(or (? number?) (? boolean?))
        (ret exp kont m-kont)]
 
+      [`(quote ,datum)
+       (match datum
+         [(? symbol? ) (ret datum kont m-kont)]
+         [else (eval datum env kont m-kont)])]
+      
       [`(,(? λ-or-lambda?) ,args ,body)
        (ret `(clo ,exp ,env) kont m-kont)]
        
@@ -42,9 +47,58 @@
       [`(if ,grd, texp, fexp)
        (eval grd env `(ifk ,texp ,fexp ,env ,kont) m-kont)]
 
+      [`(and) (ret #t kont m-kont)]
+      [`(and ,e0) (eval e0 env kont m-kont)]
+      [`(and ,e0 ,es ...)
+       (eval `(if ,e0 (and ,@es) #f)
+             env kont m-kont)]
+      
+      [`(or) (ret #f kont m-kont)]
+      [`(or ,e0) (eval e0 env kont m-kont)]      
+      [`(or ,e0 ,es ...)
+       (define temp (gensym 'or))
+       (eval `(let ([,temp ,e0])
+                (if ,temp ,temp (or ,@es)))
+             env kont m-kont)]
+
+      [`(not ,exp)
+       (eval `(if ,exp #f #t) env kont m-kont)]
+
+      [`(cond) (ret (void) kont m-kont)]
+      [`(cond [else ,e0] ,eb ...)
+       (eval e0 env kont m-kont)]
+
+      [`(cond [,e0] ,es ...)
+       (define temp (gensym 'cond))
+       (eval `(let ([,temp ,e0])
+                (if ,temp
+                    ,temp
+                    (cond ,@es)))
+             env kont m-kont)]
+      
+      [`(cond [,e0 ,e1] ,es ...)
+       (eval `(if ,e0 ,e1 (cond ,@es)) env kont m-kont)]
+
+      ;[test-expr => proc-expr]
+      ;The proc-expr is evaluated, and it must produce a procedure that accepts one argument,
+      ;otherwise the exn:fail:contract exception is raised. The procedure is applied to the
+      ;result of test-expr in tail position with respect to the cond expression.
+      [`(cond [,te => ,pe] ,es ...)
+       ;(displayln (~a "4te: " te "\npe: " pe "\nes:" es))
+       (define temp (gensym 'cond))
+       (eval `(let ([,temp ,te])
+                (if ,temp
+                    (,pe ,temp)
+                    (cond ,@es)))
+             env kont m-kont)]
+      
 
       [`(let ([,xs ,rhs] ...) ,body)
        (eval `((λ ,xs ,body) ,@rhs) env kont m-kont)]
+
+      [`(let* () ,ebody) (eval ebody env kont m-kont)]
+      [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      
+       (eval `(let ([,lhs ,rhs]) (let* ,e-pairs ,ebody)) env kont m-kont)]
 
 
       [`(newPrompt)
@@ -76,16 +130,16 @@
   (define (split-k kont prompt)
     (let loop ([Kup `()]
                [Klatest kont])
-      (if (equal? (car Klatest) prompt)
-          (cons (reverse Kup) (cdr Klatest))
-          (loop (cons (car Klatest) Kup) (cdr Klatest)))))
+      (cond [(equal? Klatest `())
+             (raise (format "Prompt -- ~a -- not found!" prompt))]
+            [(equal? (car Klatest) prompt)
+             (cons (reverse Kup) (cdr Klatest))]
+            [else
+             (loop (cons (car Klatest) Kup) (cdr Klatest))])))
     
-    
-  
   (define (ret val kont m-kont)
-    (displayln (~a ">>>ret  : " (list '--val: val '--kont: kont '--m-kont: m-kont)))
+    ;(displayln (~a ">>>ret  : " (list '--val: val '--kont: kont '--m-kont: m-kont)))
     (match kont
-      ;['mt val]
       [`mt
        (match m-kont
          ['() val]
@@ -106,27 +160,9 @@
 
       [`(withSubContκ ,prmpt () ,env ,this_kont)
        (match-define (cons Kup Kdown) (split-k m-kont prmpt))
-       (apply val (list `(kont ,(cons this_kont Kup))) 'mt Kdown)
-       
-       ; p = new_prompt
-       ; : = cons
-       ; ++ = append
-       
-       ; In order to split a sequence at a particular prompt, we use the operations
-       ; Ep ↑ and Ep ↓ specified as follows. 
-       ; If E contains a pushed prompt p then it can be uniquely decomposed to the
-       ; form E′++(p : E′′) with p not in E′, then Ep ↑ = E′ and Ep ↓ = E′′.
-       ; In other words, Ep ↑ gives the subsequence before the first occurrence of p, 
-       ; and Ep ↓ gives the subsequence after the first occurrence of p.
-       
-       
-       ; before sequence Ep_up, after sequence Ep_down
-       ;(ret before_seq `(app-k `(,val) ,env 'mt) after_seq)
-
-       ]
+       (apply val (list `(kont ,(cons this_kont Kup))) 'mt Kdown)]
 
       [`(pushSubContκ ,eb ,env ,kont)
-       ; `todo??
        (eval eb env 'mt (append (second val) (cons kont m-kont)))]
       
 
@@ -146,7 +182,7 @@
       [else (raise `(Error occured in ret function!...State: ,val ,kont ,m-kont))]))
   
   (define (apply vf va-list kont m-kont)
-    (displayln (~a ">>>apply: " (list '--vf: vf '--va-list: va-list '--kont: kont '--m-kont: m-kont)))
+    ;(displayln (~a ">>>apply: " (list '--vf: vf '--va-list: va-list '--kont: kont '--m-kont: m-kont)))
     ;(pretty-print vf)
     ;(pretty-print va-list)
     ;(pretty-print kont)
@@ -169,19 +205,19 @@
 
 #;
 (cek-interp '((λ (p)
-                  (pushPrompt p
-                              (+ 1
-                                 (withSubCont p (λ (k) (+ 2 1))))))
-                (newPrompt)))
+                (pushPrompt p
+                            (+ 1
+                               (withSubCont p (λ (k) (+ 2 1))))))
+              (newPrompt)))
 
 #;(cek-interp
- '(+ 2 
-     (let ([p (newPrompt)])
-       (pushPrompt p
-                   (+ 1 (withSubCont p
-                                     (λ (k) 2)))))))
+   '(+ 2 
+       (let ([p (newPrompt)])
+         (pushPrompt p
+                     (+ 1 (withSubCont p
+                                       (λ (k) 2)))))))
 
-(cek-interp '((λ (p)
+#;(cek-interp '((λ (p)
                   (+ 2
                      (pushPrompt p
                                  (if (withSubCont p
@@ -191,3 +227,16 @@
                                      3
                                      4))))
                 (newPrompt)))
+
+#;(cek-interp '(cond [else 5]))
+#;(cek-interp '(cond
+                 [(equal? 2 4)]
+                 [(equal? 3 3)]
+                 [(equal? 1 1)]))
+
+#;(cek-interp '(cond
+                 [(equal? 2 1) #t]
+                 [(equal? 2 3) #f]
+                 [else 'in-the-cond-else-block]))
+
+;(cekm-interp '(cond [(cons 2 3) => (lambda (l) l)]))

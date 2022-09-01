@@ -1,6 +1,6 @@
 #lang racket
 
-(require "cek.rkt" "parser.rkt")
+(require "cekm.rkt" "parser.rkt")
 
 ;;;;;;; test-cases
 (define test-cases
@@ -14,7 +14,8 @@
 
    "(let* ([a 3] [b (* 2 a)]) (cons a b))"
    "(- (- (/ (* (* (+ 1 2) 2) 6) 2) (expt 2 (expt 2 3))) 1)"
-   "(call/cc
+   ;"(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t)"
+   #;"(call/cc
                  (λ (top)
                    (let ((cc (call/cc (λ (cc) (cc cc)))))
                      (if (call/cc (λ (k) (if (cc (lambda (x) (top false))) (k false) (k false))))
@@ -45,11 +46,49 @@
    "(apply + (list 1 3 4))"
    "(apply (lambda x (cdr x)) (list 1 3 4))"
    "(apply (lambda (a b c) b) (list 1 (list 5 6) 4))"
-   "(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t)"))
+   
+   "((λ (p)
+       (pushPrompt p
+                   (+ 1
+                      (withSubCont p (λ (k) (+ 2 1))))))
+     (newPrompt))"
+   
+   "(+ 2 
+       (let ([p (newPrompt)])
+         (pushPrompt p
+                     (+ 1 (withSubCont p
+                                       (λ (k) 2))))))"
+   "((λ (p)
+          (+ 2
+             (pushPrompt p
+                         (if (withSubCont p
+                                          (λ (k)
+                                            (+ (pushSubCont k #f)
+                                               (pushSubCont k #t))))
+                             3
+                             4))))
+        (newPrompt))"
+   
+   "(and #t #t (if 4 #f #t))"
+   "(or #f #f (or #f 5))"
+   "(cond [else 5])"
+   "(cond
+         [(equal? 2 4)]
+         [(equal? 3 3)]
+         [(equal? 1 1)])"
+   "(cond
+         [(equal? 2 1) (quote equal)]
+         [else (quote CondElse)])"
+   "(cond [(cons 2 3) => (lambda (l) l)])"
+
+   
+   
+   
+   ))
 
 ;;;;;;; Run cases
 (for-each (λ (x)
-            (displayln (~a "case  : " x "\noutput: " (cek-interp (parse (open-input-string x))) "\n")))
+            (displayln (~a "case  : " x "\noutput: " (cekm-interp (parse (open-input-string x))) "\n")))
           test-cases)
 
 

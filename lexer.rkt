@@ -16,9 +16,9 @@
 (define-lex-abbrev right-square-bracket #\])
 (define-lex-abbrev left-curly-bracket #\{)
 (define-lex-abbrev right-curly-bracket #\})
-(define-lex-abbrev special-symbols (:or #\λ))
+(define-lex-abbrev special-symbols (:or #\λ "=>"))
 (define-lex-abbrev boolean-keywords (:or "true" "false" "#t" "#f" ))
-(define-lex-abbrev special-keywords (:or "call/cc" "let/cc" "let*" "prompt"))
+(define-lex-abbrev special-keywords (:or "call/cc" "let/cc" "let*" "prompt" "null?" "equal?"))
 (define-lex-abbrev logical-operators (:or "<" ">" "<=" ">=" "="))
 
 (define lex
@@ -47,7 +47,10 @@
     (list 'Dec (string->number lexeme))]
     
    ; if any character 
-   [(:or char-smaller-case char-upper-case)
+   ;[(:or char-smaller-case char-upper-case)
+    ;(list 'Char (string->symbol lexeme))]
+
+   [(repetition 1 +inf.0 (union char-smaller-case char-upper-case))
     (list 'Char (string->symbol lexeme))]
    
    ; if arithmatic symbol

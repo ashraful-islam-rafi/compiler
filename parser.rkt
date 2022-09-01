@@ -19,6 +19,7 @@
              [`(Sym ,symb) 
               (match symb
                 [(or '+ '- '* '/ '^) (build-sexp-list (cons symb lst))]
+                ;[`|'| (build-sexp-list (cons ' lst))]
                 [_ (build-sexp-list (cons symb lst))]
                 )]
              
