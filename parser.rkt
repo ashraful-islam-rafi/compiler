@@ -19,6 +19,7 @@
              [`(Sym ,symb) 
               (match symb
                 [(or '+ '- '* '/ '^) (build-sexp-list (cons symb lst))]
+                ;[`|.| (build-sexp-list (cons '. lst))]
                 ;[`|'| (build-sexp-list (cons ' lst))]
                 [_ (build-sexp-list (cons symb lst))]
                 )]
@@ -47,6 +48,8 @@
                 ['|<| (build-sexp-list (cons '< lst))]
                 ['|<=| (build-sexp-list (cons '<= lst))]
                 ['|=| (build-sexp-list (cons '= lst))]
+                ;['|'| (build-sexp-list lst)]
+                
                 )]
 
              [`(Char ,chr)
@@ -61,4 +64,5 @@
     (build-sexp-list '())))
 
 ; test parser
-;(parse (open-input-string "(+ 420 (* 2 (/ 3 3)))"))
+;(parse (open-input-string "(let ([a '6] [b '8]) a)"))
+;(parse (open-input-string "(quote (1 2 . (3)))"))

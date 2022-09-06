@@ -16,10 +16,10 @@
 (define-lex-abbrev right-square-bracket #\])
 (define-lex-abbrev left-curly-bracket #\{)
 (define-lex-abbrev right-curly-bracket #\})
-(define-lex-abbrev special-symbols (:or #\λ "=>"))
+(define-lex-abbrev special-symbols (:or #\λ "=>" "."))
 (define-lex-abbrev boolean-keywords (:or "true" "false" "#t" "#f" ))
 (define-lex-abbrev special-keywords (:or "call/cc" "let/cc" "let*" "prompt" "null?" "equal?"))
-(define-lex-abbrev logical-operators (:or "<" ">" "<=" ">=" "="))
+(define-lex-abbrev logical-operators (:or "<" ">" "<=" ">=" "=" "'"))
 
 (define lex
   (lexer

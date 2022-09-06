@@ -3,10 +3,10 @@
 (provide cekm-interp)
 
 (require "parser.rkt")
-
+;(cemk-interp (desugar (parse ...)))
 (require (rename-in racket/base (eval racket-eval)))
          
-(define default-prims '(* + - / expt = car cdr cons equal? null?))
+(define default-prims '(* + - / expt = > < car cdr cons equal? null?))
 ;(define default-prims '(+ = equal?)); - / expt = car cdr cons equal? null?))
 
 (define prims
@@ -28,13 +28,23 @@
   (define (eval exp env kont m-kont)
     ;(displayln (~a "\n>>>eval : " (list '--exp: exp '--env: env '--kont: kont)))
     (match exp  
-      [(or (? number?) (? boolean?))
+      [(or (? number?) (? boolean?) (? string?)
+           (? null?))
        (ret exp kont m-kont)]
-
+      
       [`(quote ,datum)
-       (match datum
-         [(? symbol? ) (ret datum kont m-kont)]
-         [else (eval datum env kont m-kont)])]
+       (let loop ([temp_datum datum])
+         (match temp_datum
+           ;[(? null?) (ret temp_datum kont m-kont)]
+           ;[(? symbol?) (ret temp_datum kont m-kont)]
+           [(or (? number?) (? boolean?)
+                (? string?) (? symbol?) (? null?))
+            (ret temp_datum kont m-kont)]
+           [(? pair?) (eval `(cons ,(loop (car temp_datum))
+                                   ,(loop (cdr temp_datum)))
+                            env kont m-kont)]
+           [else
+            (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
       
       [`(,(? λ-or-lambda?) ,args ,body)
        (ret `(clo ,exp ,env) kont m-kont)]
@@ -79,12 +89,7 @@
       [`(cond [,e0 ,e1] ,es ...)
        (eval `(if ,e0 ,e1 (cond ,@es)) env kont m-kont)]
 
-      ;[test-expr => proc-expr]
-      ;The proc-expr is evaluated, and it must produce a procedure that accepts one argument,
-      ;otherwise the exn:fail:contract exception is raised. The procedure is applied to the
-      ;result of test-expr in tail position with respect to the cond expression.
       [`(cond [,te => ,pe] ,es ...)
-       ;(displayln (~a "4te: " te "\npe: " pe "\nes:" es))
        (define temp (gensym 'cond))
        (eval `(let ([,temp ,te])
                 (if ,temp
@@ -210,7 +215,7 @@
                                (withSubCont p (λ (k) (+ 2 1))))))
               (newPrompt)))
 
-#;(cek-interp
+#;(cekm-interp
    '(+ 2 
        (let ([p (newPrompt)])
          (pushPrompt p
@@ -240,3 +245,5 @@
                  [else 'in-the-cond-else-block]))
 
 ;(cekm-interp '(cond [(cons 2 3) => (lambda (l) l)]))
+;(cekm-interp '(if #t (if #t (if 4 #f #t) #f) #f))
+;(cekm-interp '(+ 2 ((λ (p) (pushPrompt p (+ 1 (withSubCont p (λ (k) 2))))) (newPrompt))))
