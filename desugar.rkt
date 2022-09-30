@@ -1,11 +1,21 @@
 #lang racket
-(provide desugar)
+(provide desugar add-prims-to-prog)
+
+(require "cekm.rkt")   ; maybe change to prims.rkt ?
 
 ; Helper function to check if symbol λ or tag lambda
 (define (λ-or-lambda? str)
   (match str
     [(or (== 'lambda) (== 'λ)) #t]
     [else #f]))
+
+
+
+(define (add-prims-to-prog prog)
+  (foldl (lambda (op acc)
+           `(let ([,op (λ args (apply-prim ,op args))]) ,acc))
+         prog
+         default-prims))
 
 (define (desugar exp)
   ;(displayln (~a "desugar-->: " exp))
@@ -22,9 +32,15 @@
                            ,(loop (cdr temp_datum)))]
          [else
           (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
-
+    #;
     [`(let ([,xs ,rhs] ...) ,body)
      (desugar `((λ ,xs ,body) ,@rhs))]
+
+    [`(pushPrompt ,ea ,eb)
+     `(pushPrompt ,(desugar ea) ,(desugar eb))]
+    
+    [`(let ([,xs ,rhss] ...) ,body)
+     `(let ,(map (lambda (x rhs) `(,x ,(desugar rhs))) xs rhss) ,(desugar body))]
 
     [`(let* () ,ebody) (desugar ebody)]
     [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      

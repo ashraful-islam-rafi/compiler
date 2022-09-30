@@ -1,6 +1,6 @@
 #lang racket
 
-(provide cekm-interp)
+(provide cekm-interp default-prims)
 
 (require "parser.rkt")
 ;(cemk-interp (desugar (parse ...)))

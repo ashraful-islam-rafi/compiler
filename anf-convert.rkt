@@ -1,5 +1,7 @@
 #lang racket
 
+
+(require "desugar.rkt")
 (provide anf-convert)
 
 ; Helper function to check if symbol λ or tag lambda
@@ -69,11 +71,12 @@
                                                       (k `(,param ,@param*))))))))
   
   (normalize-term exp))
-#|
-(anf-convert '(+ 2 3))
+
+(anf-convert (add-prims-to-prog (desugar '(+ 2 3))))
 (anf-convert '(+ (if 1 2 #f) 2))
 (anf-convert '(+ (if (f x) 0 1) 2))
-(anf-convert '(let* ([a 3] [b (* 2 a)]) (cons a b)))
+(anf-convert (desugar '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))))
+(anf-convert (desugar '(let* ([a 3] [b (* 2 a)]) (cons a b))))
 
 (anf-convert '(let ([a '2]
                     [b '3])
@@ -82,4 +85,6 @@
                   (+ a b))))
 
 
-|#
+
+(anf-convert (desugar '(pushPrompt (newPrompt) (+ 3 4))))
+(anf-convert (desugar '(let* ([a 3] [b (* 2 a)]) (cons a b))))
