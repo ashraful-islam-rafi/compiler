@@ -92,17 +92,61 @@
 
    "(cond [(cons 2 3) => (lambda (l) l)])"
    
+   ))
+
+
+(define (pp x) (displayln (pretty-format x)))
+(define (run e)
+  (pp (anf-convert (add-prims-to-prog (desugar e)))))
+
+;;;;;;; Run cases
+#;(for-each (λ (x)
+              (displayln (~a "case               : " x
+                             "\noutput             : " (cekm-interp (parse (open-input-string x)))
+                             "\noutput-with-desugar: " (cekm-interp (desugar (parse (open-input-string x))))
+                             "\n")))
+            test-cases)
+
+
+
+
+;;;;;;; New test cases
+(define test-cases2
+  (list
+   '(+ 2 (* 3 2))
+   '(+ (if 1 2 #f) 2)
+   '(+ (if (f x) 0 1) 2)
    
+   '(let ([a '2]
+          [b '3])
+      (let ([a b]
+            [b a])
+        (+ a b)))
+   '(let* ([a 3] [b (* 2 a)]) (cons a b))
+   '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))
    
+   '(pushPrompt (newPrompt) (+ 3 4))
+   '(foldl + 0 '(1 2 3))
+   
+   '(apply + (list 1 3 4))
+   '(apply (lambda (a b c) b) (list 1 (list 5 6) 4))
+   '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
+    
    ))
 
 ;;;;;;; Run cases
 (for-each (λ (x)
-            (displayln (~a "case               : " x
-                           "\noutput             : " (cekm-interp (parse (open-input-string x)))
-                           "\noutput-with-desugar: " (cekm-interp (desugar (parse (open-input-string x))))
-                           "\n")))
-          test-cases)
+            (displayln (~a "\ncase:\n" x))
+            (display (~a "\noutput:\n"))
+            (run x))
+          test-cases2)
+
+
+
+
+
+
+
 
 ;;;;;;; Run to see Desugared Expression
 ;'=================Run-to-see-Desugared-Expression============

@@ -1,7 +1,7 @@
 #lang racket
 
 
-(require "desugar.rkt")
+(require "desugar.rkt" "prims.rkt")
 (provide anf-convert)
 
 ; Helper function to check if symbol λ or tag lambda
@@ -15,7 +15,7 @@
   (match v
     [`(quote ,datum) #t]
     [(or '+ '- '* '/ '=) #t]
-    [(or (? symbol?) (? number?) (? boolean?) (? string?) (? char?) '(void)) #t]
+    [(or (? symbol?) (? number?) (? boolean?) (? string?) (? char?) ) #t]
     [else #f]))
 
 (define (anf-convert exp)
@@ -30,8 +30,9 @@
 
       [`(let () ,body)
        (normalize body k)]
-      
+
       [`(let ([,xs ,rhs] . ,rest) ,body)
+       ;(displayln (~a "xs: " xs "\nrhs: " rhs "\nrest: "rest "\nbody: "body "\n---\n" ))
        (normalize rhs (λ (param)
                         `(let ([,xs ,param])
                            ,(normalize `(let (,@rest) ,body) k))))]
@@ -41,11 +42,13 @@
                              (k `(if ,param
                                      ,(normalize-term texp)
                                      ,(normalize-term fexp)))))]
+
       [`(call/cc ,e0)
        (normalize-name e0
                        (λ (param)
                          (k `(call/cc ,param))))]
-    
+
+      
       [`(,Fn ...)
        (normalize-name* Fn k)]
       
@@ -55,7 +58,9 @@
   (define (normalize-name M k)
     (normalize M (λ (param)
                    (match param
-                     [(? Value?) (k param)]
+                     [(? Value?)
+                      ;(displayln (~a "param: " param))
+                      (k param)]
                      [`(,(? λ-or-lambda?) ,param ,body)
                       (k `(λ ,param ,body))]
                      [else
@@ -72,19 +77,11 @@
   
   (normalize-term exp))
 
-(anf-convert (add-prims-to-prog (desugar '(+ 2 3))))
-(anf-convert '(+ (if 1 2 #f) 2))
-(anf-convert '(+ (if (f x) 0 1) 2))
-(anf-convert (desugar '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))))
-(anf-convert (desugar '(let* ([a 3] [b (* 2 a)]) (cons a b))))
 
-(anf-convert '(let ([a '2]
-                    [b '3])
-                (let ([a b]
-                      [b a])
-                  (+ a b))))
+(define (run e)
+  (displayln
+   (pretty-format
+    (anf-convert (add-prims-to-prog (desugar e))))))
 
-
-
-(anf-convert (desugar '(pushPrompt (newPrompt) (+ 3 4))))
-(anf-convert (desugar '(let* ([a 3] [b (* 2 a)]) (cons a b))))
+;(run '(apply (lambda (a b c) b) (list 1 (list 5 6) 4)))
+;(run '(apply + (let* ([a 3] [b (* 2 a)]) (list a b))))

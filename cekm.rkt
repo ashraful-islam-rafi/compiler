@@ -1,13 +1,13 @@
 #lang racket
 
-(provide cekm-interp default-prims)
+(provide cekm-interp)
 
-(require "parser.rkt")
+(require "parser.rkt" "prims.rkt")
 ;(cemk-interp (desugar (parse ...)))
 (require (rename-in racket/base (eval racket-eval)))
          
-(define default-prims '(* + - / expt = > < car cdr cons equal? null?))
-;(define default-prims '(+ = equal?)); - / expt = car cdr cons equal? null?))
+;(define default-prims '(* + - / expt = > < car cdr cons equal? null?))
+;(define default-prims '(* +)); - / expt = car cdr cons equal? null?))
 
 (define prims
   (foldl (lambda (op env)
@@ -206,8 +206,16 @@
   (eval prog prims 'mt '()))
 
 ; test interpreter
-;(cek-interp '(+ 420 2))
+;(cekm-interp '(+ 420 2))
 
+;(cekm-interp '((lambda (x) x) (lambda (y) y)))
+#;(cekm-interp '(let ((t2245027 (newPrompt)))
+                ((λ (p)
+                   (let ((t2245025
+                          (withSubCont p (λ (k) (+ 2 1)))))
+                     (let ((t2245026 (+ 1 t2245025)))
+                       (pushPrompt p t2245026))))
+                 t2245027)))
 #;
 (cek-interp '((λ (p)
                 (pushPrompt p
