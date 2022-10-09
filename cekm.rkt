@@ -18,7 +18,7 @@
 (define (racket-apply proc lst)
   (apply proc lst))
 
-(define (cekm-interp prog)
+(define (cekm-interp prog (env prims))
   ; Helper function to check if symbol λ or tag lambda
   (define (λ-or-lambda? str)
     (match str
@@ -31,20 +31,23 @@
       [(or (? number?) (? boolean?) (? string?)
            (? null?))
        (ret exp kont m-kont)]
+
+      #;[`(quote ,datum)
+       (ret `(quote ,datum) kont m-kont)]
       
       [`(quote ,datum)
-       (let loop ([temp_datum datum])
-         (match temp_datum
-           ;[(? null?) (ret temp_datum kont m-kont)]
-           ;[(? symbol?) (ret temp_datum kont m-kont)]
-           [(or (? number?) (? boolean?)
-                (? string?) (? symbol?) (? null?))
-            (ret temp_datum kont m-kont)]
-           [(? pair?) (eval `(cons ,(loop (car temp_datum))
-                                   ,(loop (cdr temp_datum)))
-                            env kont m-kont)]
-           [else
-            (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
+         (let loop ([temp_datum datum])
+           (match temp_datum
+             ;[(? null?) (ret temp_datum kont m-kont)]
+             ;[(? symbol?) (ret temp_datum kont m-kont)]
+             [(or (? number?) (? boolean?)
+                  (? string?) (? symbol?) (? null?))
+              (ret temp_datum kont m-kont)]
+             [(? pair?) (eval `(cons ,(loop (car temp_datum))
+                                     ,(loop (cdr temp_datum)))
+                              env kont m-kont)]
+             [else
+              (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
       
       [`(,(? λ-or-lambda?) ,args ,body)
        (ret `(clo ,exp ,env) kont m-kont)]
@@ -105,6 +108,12 @@
       [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      
        (eval `(let ([,lhs ,rhs]) (let* ,e-pairs ,ebody)) env kont m-kont)]
 
+      ;[`(letrec ([,var ,exp] ,e-pairs ...) ,body)
+      [`(letrec ([,var ,exp]) ,body)
+       (displayln exp)
+       (displayln (~a "var: " var " exp: " exp " body: "body)) 
+       (eval `(let ([,var (,Ycomb (λ (,var) ,(eval exp env kont m-kont)))]) ,body) env kont m-kont)]
+
 
       [`(newPrompt)
        (ret `(prompt ,(gensym 'prompt)) kont m-kont)]
@@ -127,6 +136,7 @@
        (ret (racket-apply (racket-eval opr (make-base-namespace)) (hash-ref env x)) kont m-kont)]
       
       [`(,ef ,ea-list ...)
+       ;(display "here...")
        (eval ef env `(app-k () ,ea-list ,env ,kont) m-kont)]
 
 
@@ -203,19 +213,19 @@
 
       [else (raise `(Error occured in apply function!...State: ,vf ,va-list ,kont ,m-kont))]))
   
-  (eval prog prims 'mt '()))
+  (eval prog env 'mt '()))
 
 ; test interpreter
 ;(cekm-interp '(+ 420 2))
 
 ;(cekm-interp '((lambda (x) x) (lambda (y) y)))
 #;(cekm-interp '(let ((t2245027 (newPrompt)))
-                ((λ (p)
-                   (let ((t2245025
-                          (withSubCont p (λ (k) (+ 2 1)))))
-                     (let ((t2245026 (+ 1 t2245025)))
-                       (pushPrompt p t2245026))))
-                 t2245027)))
+                  ((λ (p)
+                     (let ((t2245025
+                            (withSubCont p (λ (k) (+ 2 1)))))
+                       (let ((t2245026 (+ 1 t2245025)))
+                         (pushPrompt p t2245026))))
+                   t2245027)))
 #;
 (cek-interp '((λ (p)
                 (pushPrompt p

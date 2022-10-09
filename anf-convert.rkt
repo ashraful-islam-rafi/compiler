@@ -81,7 +81,7 @@
 (define (run e)
   (displayln
    (pretty-format
-    (anf-convert (add-prims-to-prog (desugar e))))))
+    (anf-convert (desugar e)))))
 
 ;(run '(apply (lambda (a b c) b) (list 1 (list 5 6) 4)))
 ;(run '(apply + (let* ([a 3] [b (* 2 a)]) (list a b))))

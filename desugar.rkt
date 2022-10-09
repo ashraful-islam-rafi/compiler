@@ -9,11 +9,27 @@
     [(or (== 'lambda) (== 'λ)) #t]
     [else #f]))
 
+#;(define (add-prims-to-prog prog)
+    (foldl (lambda (op acc)
+             `(let ([,op (λ args (apply-prim ,op args))]) ,acc))
+         
+           (foldr (lambda (builtin prog)
+                    `(letrec ([name lam]) ,prog))
+                  prog
+                  builtins
+                  default-prims)))
+
 (define (add-prims-to-prog prog)
   (foldl (lambda (op acc)
            `(let ([,op (λ args (apply-prim ,op args))]) ,acc))
-         prog
+         
+         (foldr (lambda (builtin prog)
+                  (match-define `(,name ,lam) builtin) 
+                  `(letrec ([,name ,lam]) ,prog))
+                prog
+                builtins)
          default-prims))
+
 
 (define (desugar exp)
   ;(displayln (~a "desugar-->: " exp))
@@ -29,19 +45,14 @@
            [else
             (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
     
-    
     #;[`(let ([,xs ,rhs] ...) ,body)
        (desugar `((λ ,xs ,body) ,@rhs))]
 
-    [`(pushPrompt ,ea ,eb)
-     `(pushPrompt ,(desugar ea) ,(desugar eb))]
-    
-    [`(withSubCont ,ea ,ef)
-     `(withSubCont ,(desugar ea) ,(desugar ef))]
-
-    [`(pushSubCont ,eseq ,eb)
-     `(pushSubCont ,(desugar eseq) ,(desugar eb))]
-    
+    [`(letrec ([,fname (lambda (,flamx) ,flambody)]) ,body)
+     (desugar `(let ([,fname (,Ycomb (lambda (,fname)
+                                      (lambda (,flamx)
+                                        ,flambody)))])
+                 ,body))]
     
     [`(let ([,xs ,rhss] ...) ,body)
      ;(displayln (~a "xs: " xs "\nrhs: " rhss "\nbody: "body "\n---\n" ))
@@ -54,6 +65,15 @@
     
     [`(,(? λ-or-lambda?) ,args ,body)
      `(λ ,args ,(desugar body))]
+
+    [`(pushPrompt ,ea ,eb)
+     `(pushPrompt ,(desugar ea) ,(desugar eb))]
+    
+    [`(withSubCont ,ea ,ef)
+     `(withSubCont ,(desugar ea) ,(desugar ef))]
+
+    [`(pushSubCont ,eseq ,eb)
+     `(pushSubCont ,(desugar eseq) ,(desugar eb))]
     
     [`(and) #t]
     [`(and ,e0) (desugar e0)]

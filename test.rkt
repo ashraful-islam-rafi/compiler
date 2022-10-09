@@ -95,11 +95,8 @@
    ))
 
 
-(define (pp x) (displayln (pretty-format x)))
-(define (run e)
-  (pp (anf-convert (add-prims-to-prog (desugar e)))))
 
-;;;;;;; Run cases
+;;;;;;; Runs cases
 #;(for-each (λ (x)
               (displayln (~a "case               : " x
                              "\noutput             : " (cekm-interp (parse (open-input-string x)))
@@ -115,7 +112,7 @@
   (list
    '(+ 2 (* 3 2))
    '(+ (if 1 2 #f) 2)
-   '(+ (if (f x) 0 1) 2)
+   ;'(+ (if (f x) 0 1) 2)
    
    '(let ([a '2]
           [b '3])
@@ -125,22 +122,39 @@
    '(let* ([a 3] [b (* 2 a)]) (cons a b))
    '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))
    
-   '(pushPrompt (newPrompt) (+ 3 4))
-   '(foldl + 0 '(1 2 3))
+   ;'(pushPrompt (newPrompt) (+ 3 4))
+   ;'(foldl + 0 '(1 2 3))
    
-   '(apply + (list 1 3 4))
-   '(apply (lambda (a b c) b) (list 1 (list 5 6) 4))
-   '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
+   ;'(apply + (list 1 3 4))
+   ;'(apply (lambda (a b c) b) 12)
+   ;'(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
     
    ))
 
+(define (compile e)
+  (anf-convert (desugar (add-prims-to-prog e))))
+
+
 ;;;;;;; Run cases
-(for-each (λ (x)
-            (displayln (~a "\ncase:\n" x))
-            (display (~a "\noutput:\n"))
-            (run x))
+#;(for-each (λ (prog)
+            (define prog+ (compile prog))
+            (displayln (~a "\ncase:\n" prog))
+            (displayln (~a "value: " (cekm-interp prog)))
+            (displayln (~a "\noutput:\n" prog+))
+            ;(displayln (~a "value: " (cekm-interp prog+ (hash))))
+            )
           test-cases2)
 
+(for-each (λ (prog)
+            (define prog+ (compile prog))
+            (displayln (~a "case               : " prog
+                           "\noutput             : " (cekm-interp prog)
+                           ;"\noutput-with-prims  : " (cekm-interp (add-prims-to-prog prog))
+                           "\noutput-with-desugar: " (cekm-interp (desugar prog))
+                           "\noutput-after-anf   : " (cekm-interp (anf-convert (desugar prog)))
+                           "\noutput-after-anf   : " (cekm-interp (anf-convert (desugar prog)))
+                           "\n")))
+          test-cases2)
 
 
 
