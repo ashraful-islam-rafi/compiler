@@ -23,6 +23,7 @@
 
   (define (normalize M k)
     (match M
+      ;[`',datum (k `',datum)] ;new
       [(? Value?) (k M)]
       
       [`(,(? λ-or-lambda?) ,params ,eb)
@@ -30,18 +31,37 @@
 
       [`(let () ,body)
        (normalize body k)]
+      
+      [`(let ([,xs ,rhss] ...) ,body)
+       (k `(let ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
 
-      [`(let ([,xs ,rhs] . ,rest) ,body)
-       ;(displayln (~a "xs: " xs "\nrhs: " rhs "\nrest: "rest "\nbody: "body "\n---\n" ))
-       (normalize rhs (λ (param)
-                        `(let ([,xs ,param])
-                           ,(normalize `(let (,@rest) ,body) k))))]
+      [`(let ,var ([,xs ,rhss] ...) ,body)
+       (k `(let ,var ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
+
+      
+      #;[`(let ([,xs ,rhs] . ,rest) ,body)
+       #;(normalize rhs (λ (param)
+                          `(let ([,xs ,param])
+                             ,(normalize `(let (,@rest) ,body) k))))
+       (k `(let ([,xs ,(normalize-term rhs)])
+             ,(normalize-term
+               `(let ,rest ,body))))]
 
       [`(if ,grd ,texp ,fexp)
        (normalize-name grd (λ (param)
                              (k `(if ,param
                                      ,(normalize-term texp)
                                      ,(normalize-term fexp)))))]
+
+      [`(apply-prim ,op ,e0)
+       (normalize-name e0
+                       (λ (param)
+                         (k `(apply-prim ,op ,param))))]
+      
+      [`(apply ,es ...)
+       (normalize-name* es
+                        (λ (xs)
+                          (k `(apply . ,xs))))]
 
       [`(call/cc ,e0)
        (normalize-name e0
@@ -57,7 +77,9 @@
 
   (define (normalize-name M k)
     (normalize M (λ (param)
+                   ;(displayln param)
                    (match param
+                     ;[`',datum (k `',datum)] ;new
                      [(? Value?)
                       ;(displayln (~a "param: " param))
                       (k param)]
@@ -71,9 +93,12 @@
     (if (null? M*)
         (k '())
         (normalize-name (car M*) (λ (param) 
-                                   (normalize-name* (cdr M*)
-                                                    (λ (param*) 
-                                                      (k `(,param ,@param*))))))))
+                                   (normalize-name*
+                                    (cdr M*)
+                                    (λ (param*) 
+                                      (k `(,param ,@param*))
+                                      ;(k `(,param . ,param*))
+                                      ))))))
   
   (normalize-term exp))
 

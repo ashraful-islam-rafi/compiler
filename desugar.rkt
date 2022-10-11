@@ -1,7 +1,7 @@
 #lang racket
 (provide desugar add-prims-to-prog)
 
-(require "cekm.rkt" "prims.rkt")   ; maybe change to prims.rkt ?
+(require "prims.rkt")   ; maybe change to prims.rkt ?
 
 ; Helper function to check if symbol λ or tag lambda
 (define (λ-or-lambda? str)
@@ -9,31 +9,77 @@
     [(or (== 'lambda) (== 'λ)) #t]
     [else #f]))
 
-#;(define (add-prims-to-prog prog)
-    (foldl (lambda (op acc)
-             `(let ([,op (λ args (apply-prim ,op args))]) ,acc))
-         
-           (foldr (lambda (builtin prog)
-                    `(letrec ([name lam]) ,prog))
-                  prog
-                  builtins
-                  default-prims)))
 
 (define (add-prims-to-prog prog)
-  (foldl (lambda (op acc)
+  (foldl (λ (op acc)
            `(let ([,op (λ args (apply-prim ,op args))]) ,acc))
          
-         (foldr (lambda (builtin prog)
+         (foldr (λ (builtin prog)
                   (match-define `(,name ,lam) builtin) 
                   `(letrec ([,name ,lam]) ,prog))
                 prog
                 builtins)
          default-prims))
 
+; from matt's article
+; atomic? : term -> boolean
+(define (atomic? exp)
+  (match exp
+    [`(λ . ,_)     #t]
+    [(? number?)   #t]
+    [(? string?)   #t]
+    [(? boolean?)  #t]
+    [`(quote . ,_) #t]
+    ['(void)       #t]
+    [else          #f]))
+
+; from matt's article
+; desugar-quote : sexp -> exp
+(define (desugar-quote s-exp)
+  (cond
+    [(pair? s-exp)     `(cons ,(desugar-quote (car s-exp))
+                              ,(desugar-quote (cdr s-exp)))]
+    [(null? s-exp)     ''()]
+    [(number? s-exp)   s-exp]
+    [(string? s-exp)   s-exp]
+    [(boolean? s-exp)  s-exp]
+    [(symbol? s-exp)   `(quote ,s-exp)]
+    [else 
+     (error (format "wrong quote value: ~s~n" s-exp))]))
+
+; from matt's article
+; desugar-qq : qqexp -> exp
+(define (desugar-qq n qq-exp)
+  (match qq-exp
+    [(list 'unquote exp)
+     (if (= n 1)
+         (desugar exp)
+         (list 'list ''unquote 
+               (desugar-qq (- n 1) exp)))]
+    
+    [`(quasiquote ,qq-exp)
+     `(list 'quasiquote ,(desugar-qq (+ n 1) qq-exp))]
+    
+    [(cons (list 'unquote-splicing exp) rest)
+     (if (= n 1)
+         `(append* ,exp ,(desugar-qq n rest))
+         (cons (list 'unquote-splicing (desugar-qq (- n 1) exp))
+               (desugar-qq n rest)))]
+    
+    [`(,qq-exp1 . ,rest)
+     `(cons ,(desugar-qq n qq-exp1)
+            ,(desugar-qq n rest))]
+       
+    [else 
+     (desugar-quote qq-exp)]))
+
 
 (define (desugar exp)
   ;(displayln (~a "desugar-->: " exp))
   (match exp
+    [(? symbol?)      exp]
+    [`(quote ,exp)  (desugar-quote exp)]
+    
     #;[`(quote ,datum)
        (let loop ([temp_datum datum])
          (match temp_datum
@@ -47,23 +93,27 @@
     
     #;[`(let ([,xs ,rhs] ...) ,body)
        (desugar `((λ ,xs ,body) ,@rhs))]
-
-    [`(letrec ([,fname (lambda (,flamx) ,flambody)]) ,body)
-     (desugar `(let ([,fname (,Ycomb (lambda (,fname)
-                                      (lambda (,flamx)
-                                        ,flambody)))])
-                 ,body))]
     
     [`(let ([,xs ,rhss] ...) ,body)
-     ;(displayln (~a "xs: " xs "\nrhs: " rhss "\nbody: "body "\n---\n" ))
-     `(let ,(map (lambda (x rhs) `(,x ,(desugar rhs))) xs rhss) ,(desugar body))]
+     `(let ,(map (λ (x rhs) `(,x ,(desugar rhs))) xs rhss) ,(desugar body))]  
 
     [`(let* () ,ebody) (desugar ebody)]
     [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      
      (desugar `(let ([,lhs ,rhs])
                  (let* ,e-pairs ,ebody)))]
+
+    [`(letrec ([,fname ,exp]) ,body)
+     (match fname
+       [`Ycomb (desugar `(let ([,fname ,exp]) ,body))]
+       [else
+        (desugar `(let ([,fname (Ycomb (λ (,fname) ,exp))]) ,body))])]
+
     
     [`(,(? λ-or-lambda?) ,args ,body)
+     `(λ ,args ,(desugar body))]
+
+    ;??
+    [`(,(? λ-or-lambda?) ,args . ,body)
      `(λ ,args ,(desugar body))]
 
     [`(pushPrompt ,ea ,eb)
@@ -108,9 +158,14 @@
     [`(apply ,e0 ,e1)
      `(apply ,(desugar e0) ,(desugar e1))]
      
-    [(or (? number?) (? boolean?) (? symbol?) (? string?)) exp]
-    [`(quote ,datum) `(quote ,datum)]
-
+    ;[(or (? number?) (? boolean?) (? symbol?) (? string?) `(void) ) exp]
+    ;[`(quote ,datum) `(quote ,datum)]
+    
+    [`(quasiquote ,exp)
+     (desugar-qq 1 exp)]
+    
+    [(? atomic? exp) exp]
+    
     [`(,ef ,ea-list ...)
      (cons (desugar ef) (map desugar ea-list))]
     

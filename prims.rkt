@@ -2,16 +2,16 @@
 
 (provide default-prims prims? builtins Ycomb)
 
-(define default-prims '(* + - / expt = > < car cdr cons equal? null?))
-;(define default-prims '(* +)); - / expt = car cdr cons equal? null?))
+(define default-prims '(* + - / expt = > < car cdr cons list equal? null?))
+;(define default-prims '(* +)); - / expt = car cdr cons list equal? null?))
 
-(define U `(λ (u) (u u)))
+
 (define builtins
   `(
-    (Ycomb (,U (λ (y)
-                 (λ (f)
-                   (f (λ (x)
-                        (((,U y) f) x)))))))
+    (Ycomb ((λ (x) (x x))
+            (λ (g) (λ (f)
+                     (f (λ vs
+                          (apply ((g g) f) vs)))))))
     
     (append*
      (λ (lhs rhs)
@@ -19,14 +19,20 @@
            rhs
            (cons (first lhs)
                  (append* (rest lhs) rhs)))))
-    
-    ;(map1 (λ (x) x))
-    (map
+
+    (map1
      (λ (op lst) 
        (if (null? lst)
            null
            (cons (op (car lst))
-                 (map op (cdr lst))))))
+                 (map1 op (cdr lst))))))
+    (map
+     (λ (op lst1 . list-of-lists)
+       (let ([combined_lst (cons lst1 list-of-lists)])
+         (if (null? (car combined_lst))
+             null
+             (cons (apply op (map1 car combined_lst))
+                   (apply map op (map1 cdr combined_lst)))))))
     
     (ormap
      (λ (op . lst)
@@ -98,11 +104,17 @@
       #f))
 
 
-;; function implementations
-(define Ycomb `(,U (λ (y)
-                     (λ (f)
-                       (f (λ (x)
-                            (((,U y) f) x)))))))
+;; builtin function implementations
+(define Ycomb `((λ (x) (x x))
+                (λ (g) (λ (f)
+                         (f (λ vs
+                              (apply ((g g) f) vs)))))))
+
+(define Ycomb2 ((λ (x) (x x))
+                (λ (g) (λ (f)
+                         (f (λ vs
+                              (apply ((g g) f) vs)))))))
+
 
 
 (define map
@@ -194,4 +206,66 @@
            0
            '(1 2 3 4)
            '(1 2 3 4)))
-  
+#;(define map
+    (λ (op lst) 
+      (if (null? lst)
+          null
+          (cons (op (car lst))
+                (map op (cdr lst))))))
+
+;(ormap + '(1 2 3) '(4 5 6) '(5 6 4) '(5 6 4))
+
+#;(let ([foldl
+         (Ycomb
+          (λ (foldl)
+            (lambda (f acc . lsts)
+              (if (ormap null? lsts)
+                  acc
+                  (let* ([xs (map car lsts)]
+                         [rsts (map cdr lsts)]
+                         [acc+ (apply f (append* xs `(,acc)))]
+                         )
+                    (apply foldl `(,f ,acc+ ,@rsts)))))))])
+    (foldl append*
+           null
+           '(((3 4) (1 2)))))
+
+#;(let ((reverse
+         (Ycomb
+          (λ (reverse)
+            (λ (lst) (if (null? lst) lst (append* (reverse (cdr lst)) `(,(car lst)))))))))
+    (reverse (list 1 2 3)))
+
+
+
+#;(let ((ormap
+         (Ycomb2
+          (λ (ormap)
+            (λ (op . lst)
+              (let loop ((lst lst))
+                (let ((t3835299
+                       (let ((or3501502 (null? lst)))
+                         (if or3501502
+                             or3501502
+                             (let ((t3835298 (car lst)))
+                               (null? t3835298))))))
+                  (if t3835299
+                      false
+                      (let ((t3835300 (cdar lst)))
+                        (let ((t3835301 (length t3835300)))
+                          (let ((t3835302 (= 0 t3835301)))
+                            (if t3835302
+                                (let ((t3835303 (map car lst)))
+                                  (apply op t3835303))
+                                (let ((t3835304 (map car lst)))
+                                  (let ((t3835305 (apply op t3835304)))
+                                    (let ((t3835306 (if t3835305 #f #t)))
+                                      (let ((t3835307
+                                             (equal? false t3835306)))
+                                        (if t3835307
+                                            (let ((t3835308 (map car lst)))
+                                              (apply op t3835308))
+                                            (let ((t3835309 (map cdr lst)))
+                                              (loop
+                                               t3835309)))))))))))))))))))
+    (ormap eq? '(a b c) '(a b c)))

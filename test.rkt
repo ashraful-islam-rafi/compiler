@@ -112,7 +112,6 @@
   (list
    '(+ 2 (* 3 2))
    '(+ (if 1 2 #f) 2)
-   ;'(+ (if (f x) 0 1) 2)
    
    '(let ([a '2]
           [b '3])
@@ -121,14 +120,18 @@
         (+ a b)))
    '(let* ([a 3] [b (* 2 a)]) (cons a b))
    '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))
+   '(letrec ([fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))]) (fact 5))
    
    ;'(pushPrompt (newPrompt) (+ 3 4))
-   ;'(foldl + 0 '(1 2 3))
    
-   ;'(apply + (list 1 3 4))
-   ;'(apply (lambda (a b c) b) 12)
-   ;'(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
-    
+   
+   '(apply + (list 1 3 4))
+   '(apply (lambda (a b c) b) (list 1 2 3))
+   '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
+   ;'(reverse (list 1 2 3))
+   ;'(foldl + 0 '(1 2 3))
+   '(map + (list 1 2))
+   
    ))
 
 (define (compile e)
@@ -136,25 +139,28 @@
 
 
 ;;;;;;; Run cases
-#;(for-each (λ (prog)
-            (define prog+ (compile prog))
-            (displayln (~a "\ncase:\n" prog))
-            (displayln (~a "value: " (cekm-interp prog)))
-            (displayln (~a "\noutput:\n" prog+))
-            ;(displayln (~a "value: " (cekm-interp prog+ (hash))))
-            )
-          test-cases2)
+#;(for-each
+   (λ (prog)
+     (define prog+ (compile prog))
+     (displayln (~a "\ncase:\n" prog))
+     (displayln (~a "value: " (cekm-interp prog)))
+     (displayln (~a "\noutput:\n" prog+))
+     ;(displayln (~a "value: " (cekm-interp prog+ (hash))))
+     )
+   test-cases2)
 
-(for-each (λ (prog)
-            (define prog+ (compile prog))
-            (displayln (~a "case               : " prog
-                           "\noutput             : " (cekm-interp prog)
-                           ;"\noutput-with-prims  : " (cekm-interp (add-prims-to-prog prog))
-                           "\noutput-with-desugar: " (cekm-interp (desugar prog))
-                           "\noutput-after-anf   : " (cekm-interp (anf-convert (desugar prog)))
-                           "\noutput-after-anf   : " (cekm-interp (anf-convert (desugar prog)))
-                           "\n")))
-          test-cases2)
+(for-each
+ (λ (prog)
+   (define prog+ (compile prog))
+   (displayln (~a "case        : " prog
+                  ;"\noutput      : " (cekm-interp prog)
+                  ;"\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
+                  ;"\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
+                  "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
+                  ;"\nafter-anf   : " (cekm-interp prog+ (hash))
+
+                  "\n")))
+ test-cases2)
 
 
 

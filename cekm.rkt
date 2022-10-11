@@ -2,8 +2,7 @@
 
 (provide cekm-interp)
 
-(require "parser.rkt" "prims.rkt")
-;(cemk-interp (desugar (parse ...)))
+(require "parser.rkt" "desugar.rkt" "prims.rkt" "anf-convert.rkt")
 (require (rename-in racket/base (eval racket-eval)))
          
 ;(define default-prims '(* + - / expt = > < car cdr cons equal? null?))
@@ -33,29 +32,28 @@
        (ret exp kont m-kont)]
 
       #;[`(quote ,datum)
-       (ret `(quote ,datum) kont m-kont)]
+         (ret `(quote ,datum) kont m-kont)]
+      ;[`(quasiquote ,qq-exp)
+      ;(ret `(quote ,datum) kont m-kont)]
       
       [`(quote ,datum)
-         (let loop ([temp_datum datum])
-           (match temp_datum
-             ;[(? null?) (ret temp_datum kont m-kont)]
-             ;[(? symbol?) (ret temp_datum kont m-kont)]
-             [(or (? number?) (? boolean?)
-                  (? string?) (? symbol?) (? null?))
-              (ret temp_datum kont m-kont)]
-             [(? pair?) (eval `(cons ,(loop (car temp_datum))
-                                     ,(loop (cdr temp_datum)))
-                              env kont m-kont)]
-             [else
-              (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
+       (let loop ([temp_datum datum])
+         (match temp_datum
+           ;[(? null?) (ret temp_datum kont m-kont)]
+           ;[(? symbol?) (ret temp_datum kont m-kont)]
+           [(or (? number?) (? boolean?)
+                (? string?) (? symbol?) (? null?))
+            (ret temp_datum kont m-kont)]
+           [(? pair?) (eval `(cons ,(loop (car temp_datum))
+                                   ,(loop (cdr temp_datum)))
+                            env kont m-kont)]
+           [else
+            (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
       
       [`(,(? λ-or-lambda?) ,args ,body)
        (ret `(clo ,exp ,env) kont m-kont)]
        
-      [(? symbol? x)
-       (ret (hash-ref env x
-                      (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
-            kont m-kont)] 
+      
 
       [`(if ,grd, texp, fexp)
        (eval grd env `(ifk ,texp ,fexp ,env ,kont) m-kont)]
@@ -110,10 +108,8 @@
 
       ;[`(letrec ([,var ,exp] ,e-pairs ...) ,body)
       [`(letrec ([,var ,exp]) ,body)
-       (displayln exp)
-       (displayln (~a "var: " var " exp: " exp " body: "body)) 
-       (eval `(let ([,var (,Ycomb (λ (,var) ,(eval exp env kont m-kont)))]) ,body) env kont m-kont)]
-
+       (eval `(let ([,var (,Ycomb (λ (,var)
+                                       ,exp))]) ,body) env kont m-kont)]
 
       [`(newPrompt)
        (ret `(prompt ,(gensym 'prompt)) kont m-kont)]
@@ -139,6 +135,11 @@
        ;(display "here...")
        (eval ef env `(app-k () ,ea-list ,env ,kont) m-kont)]
 
+      [(? symbol? x)
+       ;(displayln x)
+       (ret (hash-ref env x
+                      (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
+            kont m-kont)] 
 
       [else (raise `(Error occured in eval function!...State: ,exp ,env ,kont ,m-kont))]))
 
@@ -203,6 +204,7 @@
     ;(pretty-print kont)
     (match vf
       [`(clo (,(? λ-or-lambda?) ,params ,eb) ,env)
+       ;(pretty-print vf)
        (if (symbol? params)
            (eval eb (hash-set env params va-list) kont m-kont)
            (if (= (length params) (length va-list))
@@ -263,5 +265,5 @@
                  [else 'in-the-cond-else-block]))
 
 ;(cekm-interp '(cond [(cons 2 3) => (lambda (l) l)]))
-;(cekm-interp '(if #t (if #t (if 4 #f #t) #f) #f))
+(cekm-interp '(if #t (if #t (if 4 #f #t) #f) #f))
 ;(cekm-interp '(+ 2 ((λ (p) (pushPrompt p (+ 1 (withSubCont p (λ (k) 2))))) (newPrompt))))
