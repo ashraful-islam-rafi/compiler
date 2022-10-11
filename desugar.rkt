@@ -22,34 +22,9 @@
          default-prims))
 
 ; from matt's article
-; atomic? : term -> boolean
-(define (atomic? exp)
-  (match exp
-    [`(λ . ,_)     #t]
-    [(? number?)   #t]
-    [(? string?)   #t]
-    [(? boolean?)  #t]
-    [`(quote . ,_) #t]
-    ['(void)       #t]
-    [else          #f]))
-
-; from matt's article
-; desugar-quote : sexp -> exp
-(define (desugar-quote s-exp)
-  (cond
-    [(pair? s-exp)     `(cons ,(desugar-quote (car s-exp))
-                              ,(desugar-quote (cdr s-exp)))]
-    [(null? s-exp)     ''()]
-    [(number? s-exp)   s-exp]
-    [(string? s-exp)   s-exp]
-    [(boolean? s-exp)  s-exp]
-    [(symbol? s-exp)   `(quote ,s-exp)]
-    [else 
-     (error (format "wrong quote value: ~s~n" s-exp))]))
-
-; from matt's article
 ; desugar-qq : qqexp -> exp
 (define (desugar-qq n qq-exp)
+  ;(displayln (~a "n: " n " qq-exp: " qq-exp "\n---"))
   (match qq-exp
     [(list 'unquote exp)
      (if (= n 1)
@@ -71,25 +46,24 @@
             ,(desugar-qq n rest))]
        
     [else 
-     (desugar-quote qq-exp)]))
+     (desugar 'qq-exp)]))
 
 
 (define (desugar exp)
   ;(displayln (~a "desugar-->: " exp))
   (match exp
-    [(? symbol?)      exp]
-    [`(quote ,exp)  (desugar-quote exp)]
+    [`(quote ,datum)
+     (let loop ([temp_datum datum])
+       (match temp_datum
+         [(? null?) ''()]
+         [(? symbol?)   `(quote ,temp_datum)]
+         [(or (? number?) (? boolean?) (? string?)) temp_datum]
+         [(? pair?) `(cons ,(loop (car temp_datum))
+                           ,(loop (cdr temp_datum)))]
+         [else
+          (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
     
-    #;[`(quote ,datum)
-       (let loop ([temp_datum datum])
-         (match temp_datum
-           [(? null?) ''()]
-           [(? symbol?)   `(quote ,temp_datum)]
-           [(or (? number?) (? boolean?) (? string?)) temp_datum]
-           [(? pair?) `(cons ,(loop (car temp_datum))
-                             ,(loop (cdr temp_datum)))]
-           [else
-            (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
+    [(? symbol?)      exp]
     
     #;[`(let ([,xs ,rhs] ...) ,body)
        (desugar `((λ ,xs ,body) ,@rhs))]
@@ -157,14 +131,16 @@
 
     [`(apply ,e0 ,e1)
      `(apply ,(desugar e0) ,(desugar e1))]
-     
-    ;[(or (? number?) (? boolean?) (? symbol?) (? string?) `(void) ) exp]
-    ;[`(quote ,datum) `(quote ,datum)]
+    
     
     [`(quasiquote ,exp)
      (desugar-qq 1 exp)]
     
-    [(? atomic? exp) exp]
+    
+    [`(,(? λ-or-lambda?) . ,body) exp]
+    [`(quote . ,datum) exp]
+    [(or (? number?) (? boolean?) (? string?) `(void)) exp]
+
     
     [`(,ef ,ea-list ...)
      (cons (desugar ef) (map desugar ea-list))]

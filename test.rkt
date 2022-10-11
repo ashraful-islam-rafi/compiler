@@ -130,7 +130,7 @@
    '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
    ;'(reverse (list 1 2 3))
    ;'(foldl + 0 '(1 2 3))
-   '(map + (list 1 2))
+   ;'(map + (list 1 2))
    
    ))
 
