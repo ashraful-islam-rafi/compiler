@@ -265,5 +265,5 @@
                  [else 'in-the-cond-else-block]))
 
 ;(cekm-interp '(cond [(cons 2 3) => (lambda (l) l)]))
-(cekm-interp '(if #t (if #t (if 4 #f #t) #f) #f))
+;(cekm-interp '(if #t (if #t (if 4 #f #t) #f) #f))
 ;(cekm-interp '(+ 2 ((λ (p) (pushPrompt p (+ 1 (withSubCont p (λ (k) 2))))) (newPrompt))))

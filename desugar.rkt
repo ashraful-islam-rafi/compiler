@@ -24,7 +24,6 @@
 ; from matt's article
 ; desugar-qq : qqexp -> exp
 (define (desugar-qq n qq-exp)
-  ;(displayln (~a "n: " n " qq-exp: " qq-exp "\n---"))
   (match qq-exp
     [(list 'unquote exp)
      (if (= n 1)
@@ -45,14 +44,17 @@
      `(cons ,(desugar-qq n qq-exp1)
             ,(desugar-qq n rest))]
        
-    [else 
-     (desugar 'qq-exp)]))
+    [else
+     (desugar `',qq-exp)]))
 
 
 (define (desugar exp)
-  ;(displayln (~a "desugar-->: " exp))
+  (displayln (~a "desugar-->: " exp))
   (match exp
+    [(? symbol?) exp]
+    
     [`(quote ,datum)
+     (displayln "here")
      (let loop ([temp_datum datum])
        (match temp_datum
          [(? null?) ''()]
@@ -63,7 +65,6 @@
          [else
           (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
     
-    [(? symbol?)      exp]
     
     #;[`(let ([,xs ,rhs] ...) ,body)
        (desugar `((λ ,xs ,body) ,@rhs))]
