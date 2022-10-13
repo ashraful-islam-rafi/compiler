@@ -23,7 +23,6 @@
 
   (define (normalize M k)
     (match M
-      ;[`',datum (k `',datum)] ;new
       [(? Value?) (k M)]
       
       [`(,(? λ-or-lambda?) ,params ,eb)
@@ -52,11 +51,6 @@
                              (k `(if ,param
                                      ,(normalize-term texp)
                                      ,(normalize-term fexp)))))]
-
-      [`(apply-prim ,op ,e0)
-       (normalize-name e0
-                       (λ (param)
-                         (k `(apply-prim ,op ,param))))]
       
       [`(apply ,es ...)
        (normalize-name* es
@@ -77,12 +71,8 @@
 
   (define (normalize-name M k)
     (normalize M (λ (param)
-                   ;(displayln param)
                    (match param
-                     ;[`',datum (k `',datum)] ;new
-                     [(? Value?)
-                      ;(displayln (~a "param: " param))
-                      (k param)]
+                     [(? Value?) (k param)]
                      [`(,(? λ-or-lambda?) ,param ,body)
                       (k `(λ ,param ,body))]
                      [else
@@ -96,8 +86,7 @@
                                    (normalize-name*
                                     (cdr M*)
                                     (λ (param*) 
-                                      (k `(,param ,@param*))
-                                      ;(k `(,param . ,param*))
+                                      (k `(,param . ,param*))
                                       ))))))
   
   (normalize-term exp))

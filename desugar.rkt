@@ -22,7 +22,6 @@
          default-prims))
 
 ; from matt's article
-; desugar-qq : qqexp -> exp
 (define (desugar-qq n qq-exp)
   (match qq-exp
     [(list 'unquote exp)
@@ -49,12 +48,11 @@
 
 
 (define (desugar exp)
-  (displayln (~a "desugar-->: " exp))
+  ;(displayln (~a "desugar-->: " exp))
   (match exp
     [(? symbol?) exp]
     
     [`(quote ,datum)
-     (displayln "here")
      (let loop ([temp_datum datum])
        (match temp_datum
          [(? null?) ''()]
@@ -70,7 +68,8 @@
        (desugar `((λ ,xs ,body) ,@rhs))]
     
     [`(let ([,xs ,rhss] ...) ,body)
-     `(let ,(map (λ (x rhs) `(,x ,(desugar rhs))) xs rhss) ,(desugar body))]  
+     `(let ,(map (λ (x rhs) `(,x ,(desugar rhs))) xs rhss) ,(desugar body))]
+    
 
     [`(let* () ,ebody) (desugar ebody)]
     [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      

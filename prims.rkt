@@ -2,8 +2,8 @@
 
 (provide default-prims prims? builtins Ycomb)
 
-(define default-prims '(* + - / expt = > < car cdr cons list equal? null?))
-;(define default-prims '(* +)); - / expt = car cdr cons list equal? null?))
+(define default-prims '(* + - / expt = > < car cdr cons list equal? null? odd? even? positive? negative?))
+;(define default-prims '(* +)); - / expt = car cdr cons list equal? null? odd? even? positive? negative?))
 
 
 (define builtins
@@ -95,6 +95,13 @@
     (append
      (λ (xs . x)
        (foldl append* null (reverse (append* `(,xs) x)))))
+
+    (filter
+     (λ (op lst)
+       (cond [(null? lst) null]
+             [(op (car lst))
+              (cons (car lst) (filter op (cdr lst)))]
+             [else (filter op (cdr lst))])))
     
     ))
   
@@ -181,6 +188,15 @@
     (foldl (λ (lst acc)
              (append* acc lst)) '() (append* `(,xs) x))))
 
+(define filter
+  (λ (op lst)
+    (cond [(null? lst) null]
+          [(op (car lst))
+           (cons (car lst) (filter op (cdr lst)))]
+          [else (filter op (cdr lst))])))
+
+
+
 #;(letrec ([foldl (lambda (f acc . lsts)
                     (if (ormap null? lsts)
                         acc
@@ -239,33 +255,26 @@
 
 
 #;(let ((ormap
-         (Ycomb2
-          (λ (ormap)
-            (λ (op . lst)
-              (let loop ((lst lst))
-                (let ((t3835299
-                       (let ((or3501502 (null? lst)))
-                         (if or3501502
-                             or3501502
-                             (let ((t3835298 (car lst)))
-                               (null? t3835298))))))
-                  (if t3835299
-                      false
-                      (let ((t3835300 (cdar lst)))
-                        (let ((t3835301 (length t3835300)))
-                          (let ((t3835302 (= 0 t3835301)))
-                            (if t3835302
-                                (let ((t3835303 (map car lst)))
-                                  (apply op t3835303))
-                                (let ((t3835304 (map car lst)))
-                                  (let ((t3835305 (apply op t3835304)))
-                                    (let ((t3835306 (if t3835305 #f #t)))
-                                      (let ((t3835307
-                                             (equal? false t3835306)))
-                                        (if t3835307
-                                            (let ((t3835308 (map car lst)))
-                                              (apply op t3835308))
-                                            (let ((t3835309 (map cdr lst)))
-                                              (loop
-                                               t3835309)))))))))))))))))))
-    (ormap eq? '(a b c) '(a b c)))
+       (Ycomb2
+        (λ (ormap)
+          (λ (op . lst)
+            (let loop ((lst lst))
+              (let ((t981578
+                     (let ((or981558 (null? lst)))
+                       (if or981558 or981558 (let ((t981577 (car lst))) (null? t981577))))))
+                (if t981578
+                    false
+                    (let ((t981579 (cdar lst)))
+                      (let ((t981580 (length t981579)))
+                        (let ((t981581 (= 0 t981580)))
+                          (if t981581
+                              (let ((t981582 (map car lst))) (apply op t981582))
+                              (let ((t981583 (map car lst)))
+                                (let ((t981584 (apply op t981583)))
+                                  (let ((t981585 (if t981584 #f #t)))
+                                    (let ((t981586 (equal? false t981585)))
+                                      (if t981586
+                                          (let ((t981587 (map car lst))) (apply op t981587))
+                                          (let ((t981588 (map cdr lst)))
+                                            (loop t981588)))))))))))))))))))
+  (ormap + '(1 2 3) '(4 5 6) '(7 8 9)))
