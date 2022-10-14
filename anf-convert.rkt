@@ -31,20 +31,22 @@
       [`(let () ,body)
        (normalize body k)]
       
-      [`(let ([,xs ,rhss] ...) ,body)
+      #;[`(let ([,xs ,rhss] ...) ,body)
        (k `(let ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
 
-      [`(let ,var ([,xs ,rhss] ...) ,body)
-       (k `(let ,var ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
-
+     
       
-      #;[`(let ([,xs ,rhs] . ,rest) ,body)
+      [`(let ([,xs ,rhs] . ,rest) ,body)
        #;(normalize rhs (λ (param)
                           `(let ([,xs ,param])
                              ,(normalize `(let (,@rest) ,body) k))))
        (k `(let ([,xs ,(normalize-term rhs)])
              ,(normalize-term
                `(let ,rest ,body))))]
+
+       [`(let ,var ([,xs ,rhss] ...) ,body)
+       (k `(let ,var ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
+
 
       [`(if ,grd ,texp ,fexp)
        (normalize-name grd (λ (param)

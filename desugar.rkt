@@ -79,16 +79,51 @@
     [`(letrec ([,fname ,exp]) ,body)
      (match fname
        [`Ycomb (desugar `(let ([,fname ,exp]) ,body))]
-       [else
+       [_
         (desugar `(let ([,fname (Ycomb (λ (,fname) ,exp))]) ,body))])]
 
     
-    [`(,(? λ-or-lambda?) ,args ,body)
+    [`(,(? λ-or-lambda?) ,(? symbol? args) ,body)
      `(λ ,args ,(desugar body))]
 
-    ;??
-    [`(,(? λ-or-lambda?) ,args . ,body)
+    [`(,(? λ-or-lambda?) ,(? (listof symbol?) args) ,body)
      `(λ ,args ,(desugar body))]
+    
+    [`(,(? λ-or-lambda?) ,improper-args ,body)
+     (define (extract-params args)
+       (match args
+         [`(,(? symbol? a) . ,b)
+          (match-define (cons lst x) (extract-params b))
+          (cons (cons a lst) x)]
+         [(? symbol? x) (cons null x)]
+         [_
+          (raise `(error ,(format "invalid parameter list! ~a" improper-args)))]))
+     
+     (match-define (cons req opt) (extract-params improper-args))
+
+     (define arg-x (gensym `param-lst))
+
+     (define (simplify-lambda arg-x req opt body)
+       (let loop ([req req])
+         (match req
+           [(? null? req)
+            `(let ([,opt ,arg-x]) ,(desugar body))]
+           [_ 
+            `(let ([,(car req) (car ,arg-x)]
+                   [,arg-x (cdr ,arg-x)])
+               ,(loop (cdr req)))])))
+
+     `(λ ,arg-x
+        (if (< ,(length req) (length '(,arg-x)))
+            (raise "invalid parameter list!")
+            ,(simplify-lambda arg-x req opt body)))]
+
+    
+
+    ; for define
+    #;[`(,(? λ-or-lambda?) ,args . ,body)
+       `(λ ,args ,(desugar body))]
+    
 
     [`(pushPrompt ,ea ,eb)
      `(pushPrompt ,(desugar ea) ,(desugar eb))]
@@ -137,7 +172,7 @@
      (desugar-qq 1 exp)]
     
     
-    [`(,(? λ-or-lambda?) . ,body) exp]
+   
     [`(quote . ,datum) exp]
     [(or (? number?) (? boolean?) (? string?) `(void)) exp]
 
