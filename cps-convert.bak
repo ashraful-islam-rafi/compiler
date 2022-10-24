@@ -14,42 +14,39 @@
 
 ; <cexp> ::=  (<aexp> <aexp>*)
 
+
+(define (T-k expr k)
+  (displayln (~a "T-k: " expr "\n---"))
+  (match expr
+    [`(λ . ,_)      (k (M expr))]
+    [ (? symbol?)   (k (M expr))]
+    
+    [`(,f ,e)
+     (define $rv (gensym '$rv))
+     (define cont `(λ (,$rv) ,(k $rv)))
+     (T-k f (λ ($f)
+              (T-k e (λ ($e)
+                       `(,$f ,$e ,cont)))))]))
+
 (define (T-c expr c)
   (displayln (~a "T-c: " expr "\n---"))
   (match expr
     [`(λ . ,_)     `(,c ,(M expr))]
     [ (? symbol?)  `(,c ,(M expr))]
 
-    ;let continuation
-    [`(let ([,lhs ,rhs]) ,body)
-     (T-c rhs `(λ (,lhs) ,(T-c body c)))]
-    
-    ;apply
-    
-    [`(,f ,es ...)
-     `(,(M f) ,c ,@(map M es))]))
+    [`(,f ,e)
+     (T-k f (λ ($f)
+              (T-k e (λ ($e)
+                       `(,$f ,$e ,c)))))]))
      
 (define (M expr)
   (displayln (~a "M: " expr "\n---"))
   (match expr
-    [`(λ (,var ...) ,body)
-     (define $k (gensym 'kont))
-     `(λ (,$k ,@var)
-        ,(T-c body $k))]
+    [`(λ (,var) ,expr)
+     (define $k (gensym '$k))
+     `(λ (,$k ,var) ,(T-c expr $k))]
     
-    [`(λ ,var ,body)
-     (define $k (gensym 'kont))
-
-     `(λ ,var
-        (let ([,$k (car ,var)])
-          (let ([,var (cdr ,var)])
-            ,(T-c body $k)
-            )))]
-
-    ;handle other atomic values
-    [(? symbol?)  expr]
-    [(? number?)  expr]))
-
+    [(? symbol?)  expr]))
      
 
 
@@ -57,10 +54,10 @@
 
 ;(M '(λ (x) y))
 ;(T-c '(λ (x) y) 'halt)
-;(T-c '(add1 (f x)) 'halt)
+(T-c '(add1 (f x)) 'halt)
 ;(T-c '(g a) 'halt)
 
-(T-c '(let ([x ((λ (z) z) 2)]) x) 'halt)
+;(T-c '(let ([x ((λ (z) z) 'y)]) x) 'halt)
 ;(T-c '((λ (z) z) x) 'halt)
 
 #;(T-c '(let ((f
