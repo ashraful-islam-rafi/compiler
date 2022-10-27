@@ -13,12 +13,12 @@
                      (f (λ vs
                           (apply ((g g) f) vs)))))))
     
-    (append*
+    (append1
      (λ (lhs rhs)
        (if (null? lhs)
            rhs
            (cons (first lhs)
-                 (append* (rest lhs) rhs)))))
+                 (append1 (rest lhs) rhs)))))
 
     (map1
      (λ (op lst) 
@@ -74,7 +74,7 @@
                   [rsts (map cdr lsts)]
                   [acc+ (apply foldr `(,f ,acc ,@rsts))]
                   )
-             (apply f (append* xs `(,acc+)))))))
+             (apply f (append1 xs `(,acc+)))))))
     
     (foldl
      (λ (f acc . lsts)
@@ -82,19 +82,19 @@
            acc
            (let* ([xs (map car lsts)]
                   [rsts (map cdr lsts)]
-                  [acc+ (apply f (append* xs `(,acc)))])
+                  [acc+ (apply f (append1 xs `(,acc)))])
              (apply foldl `(,f ,acc+ ,@rsts))))))
     
     (reverse
      (λ (lst)
        (if (null? lst) 
            lst
-           (append* (reverse (cdr lst)) `(,(car lst))))))
+           (append1 (reverse (cdr lst)) `(,(car lst))))))
     
     
     (append
      (λ (xs . x)
-       (foldl append* null (reverse (append* `(,xs) x)))))
+       (foldl append1 null (reverse (append1 `(,xs) x)))))
 
     (filter
      (λ (op lst)
@@ -131,12 +131,12 @@
         (cons (op (car lst))
               (map op (cdr lst))))))
 
-(define append*
+(define append1
   (λ (lhs rhs)
     (if (null? lhs)
         rhs
         (cons (first lhs)
-              (append* (rest lhs) rhs)))))
+              (append1 (rest lhs) rhs)))))
 
 
 (define ormap
@@ -177,16 +177,16 @@
   (λ (lst)
     (if (null? lst) 
         lst
-        (append* (reverse (cdr lst)) `(,(car lst))))))
+        (append1 (reverse (cdr lst)) `(,(car lst))))))
 
 (define append
   (λ (xs . x)
-    (foldl append* null (reverse (append* `(,xs) x)))))
+    (foldl append1 null (reverse (append1 `(,xs) x)))))
 
 (define append3
   (λ (xs . x)
     (foldl (λ (lst acc)
-             (append* acc lst)) '() (append* `(,xs) x))))
+             (append acc lst)) '() (append1 `(,xs) x))))
 
 (define filter
   (λ (op lst)
@@ -202,10 +202,10 @@
                         acc
                         (let* ([xs (map car lsts)]
                                [rsts (map cdr lsts)]
-                               [acc+ (apply f (append* xs `(,acc)))]
+                               [acc+ (apply f (append1 xs `(,acc)))]
                                )
                           (apply foldl `(,f ,acc+ ,@rsts)))))])
-    (foldl append*
+    (foldl append1
            null
            '(((3 4) (1 2)))))
 
@@ -216,7 +216,7 @@
                                [rsts (map cdr lsts)]
                                [acc+ (apply foldr `(,f ,acc ,@rsts))]
                                )
-                          (apply f (append xs `(,acc+))))))])
+                          (apply f (append1 xs `(,acc+))))))])
     (foldr (lambda (x y acc)
              (+ acc (* x y)))
            0
@@ -239,17 +239,17 @@
                   acc
                   (let* ([xs (map car lsts)]
                          [rsts (map cdr lsts)]
-                         [acc+ (apply f (append* xs `(,acc)))]
+                         [acc+ (apply f (append1 xs `(,acc)))]
                          )
                     (apply foldl `(,f ,acc+ ,@rsts)))))))])
-    (foldl append*
+    (foldl append1
            null
            '(((3 4) (1 2)))))
 
 #;(let ((reverse
          (Ycomb
           (λ (reverse)
-            (λ (lst) (if (null? lst) lst (append* (reverse (cdr lst)) `(,(car lst)))))))))
+            (λ (lst) (if (null? lst) lst (append1 (reverse (cdr lst)) `(,(car lst)))))))))
     (reverse (list 1 2 3)))
 
 

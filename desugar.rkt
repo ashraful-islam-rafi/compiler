@@ -35,7 +35,7 @@
     
     [(cons (list 'unquote-splicing exp) rest)
      (if (= n 1)
-         `(append* ,exp ,(desugar-qq n rest))
+         `(append1 ,exp ,(desugar-qq n rest))
          (cons (list 'unquote-splicing (desugar-qq (- n 1) exp))
                (desugar-qq n rest)))]
     

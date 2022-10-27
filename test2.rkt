@@ -5,258 +5,405 @@
                         (f (λ vs
                              (apply ((g g) f) vs)))))))
 
-#;(foldl
-   (λ (f acc . lsts)
-     (if (ormap null? lsts)
-         acc
-         (let* ([xs (map car lsts)]
-                [rsts (map cdr lsts)]
-                [acc+ (apply f (append xs `(,acc)))])
-           (apply foldl `(,f ,acc+ ,@rsts))))))
+;(define halt (void))
 
-
-;after desugering
-(let ((foldl
+#;(let ((f
        (Ycomb
-        (λ (foldl)
-          (λ param-lst1966087
-            (if (< 2 (length '(param-lst1966087)))
-                (raise "argument mismatch!")
-                (let ((f (car param-lst1966087)) (param-lst1966087 (cdr param-lst1966087)))
-                  (let ((acc (car param-lst1966087))
-                        (param-lst1966087 (cdr param-lst1966087)))
-                    (let ((lsts param-lst1966087))
-                      (if (ormap null? lsts)
-                          acc
-                          (let ((xs (map car lsts)))
-                            (let ((rsts (map cdr lsts)))
-                              (let ((acc+ (apply f (append xs (cons acc '())))))
-                                (apply
-                                 foldl
-                                 (cons f (cons acc+ (append rsts '())))))))))))))))))
-  (foldl + 0 (list 1 2 3)))
-
-;after anf-conversion
-(let ((foldl
-       (Ycomb
-        (λ (foldl)
-          (λ param-lst2071203
-            (let ((t2071258 (length '(param-lst2071203))))
-              (let ((t2071259 (< 2 t2071258)))
-                (if t2071259
-                    (raise "invalid parameter list!")
-                    (let ((f (car param-lst2071203)))
-                      (let ((param-lst2071203 (cdr param-lst2071203)))
-                        (let ((acc (car param-lst2071203)))
-                          (let ((param-lst2071203 (cdr param-lst2071203)))
-                            (let ((lsts param-lst2071203))
-                              (let ((t2071260 (ormap null? lsts)))
-                                (if t2071260
-                                    acc
-                                    (let ((xs (map car lsts)))
-                                      (let ((rsts (map cdr lsts)))
-                                        (let ((acc+
-                                               (let ((t2071261 (cons acc '())))
-                                                 (let ((t2071262 (append xs t2071261))) (apply f t2071262)))))
-                                          (let ((t2071263 (append rsts '())))
-                                            (let ((t2071264 (cons acc+ t2071263)))
-                                              (let ((t2071265 (cons f t2071264)))
-                                                (apply foldl t2071265))))))))))))))))))))))
-  (foldl + 0 (list 1 2 3)))
+        (λ (f)
+          (λ (n)
+            (let ((t1024937 (= n 0)))
+              (if t1024937
+                  1
+                  (let ((t1024938 (- n 1)))
+                    (let ((t1024939 (f t1024938)))
+                      (* n t1024939))))))))))
+  (f 5))
 
 
-(let ((Ycomb
-       ((λ (x) (x x))
-        (λ (g) (λ (f) (f (λ vs (let ((t2071205 (g g))) (let ((t2071206 (t2071205 f))) (apply t2071206 vs))))))))))
-  (let ((append*
-         (Ycomb
-          (λ (append*)
-            (λ (lhs rhs)
-              (let ((t2071207 (null? lhs)))
-                (if t2071207
-                    rhs
-                    (let ((t2071208 (first lhs)))
-                      (let ((t2071209 (rest lhs))) (let ((t2071210 (append* t2071209 rhs))) (cons t2071208 t2071210)))))))))))
-    (let ((map1
+#;(Ycomb
+  (lambda (_1076143 f)
+    (f (lambda (_0 x) (let ((_1 (halt x))) (_1 _1))) 5))
+  (lambda (cont1076144 f)
+    (cont1076144
+     '()
+     (lambda (cont1076145 n)
+       (=
+        (lambda (_1076146 t374623)
+          (if t374623
+            (cont1076145 '() 1)
+            (-
+             (lambda (_1076151 t374624)
+               (f
+                (lambda (_1076152 t374625)
+                  (* cont1076145 n t374625))
+                t374624))
+             n
+             1)))
+        n
+        0)))))
+
+#;(let ((Ycomb
+         ((λ (x) (x x))
+          (λ (g)
+            (λ (f)
+              (f
+               (λ vs
+                 (let ((t1024859 (g g)))
+                   (let ((t1024860 (t1024859 f)))
+                     (apply t1024860 vs))))))))))
+    (let ((append1
            (Ycomb
-            (λ (map1)
-              (λ (op lst)
-                (let ((t2071211 (null? lst)))
-                  (if t2071211
-                      null
-                      (let ((t2071212 (car lst)))
-                        (let ((t2071213 (op t2071212)))
-                          (let ((t2071214 (cdr lst))) (let ((t2071215 (map1 op t2071214))) (cons t2071213 t2071215))))))))))))
-      (let ((map
+            (λ (append1)
+              (λ (lhs rhs)
+                (let ((t1024861 (null? lhs)))
+                  (if t1024861
+                      rhs
+                      (let ((t1024862 (first lhs)))
+                        (let ((t1024863 (rest lhs)))
+                          (let ((t1024864 (append1 t1024863 rhs)))
+                            (cons t1024862 t1024864)))))))))))
+      (let ((map1
              (Ycomb
-              (λ (map)
-                (λ param-lst2071197
-                  (let ((t2071216 (length '(param-lst2071197))))
-                    (let ((t2071217 (< 2 t2071216)))
-                      (if t2071217
-                          (raise "invalid parameter list!")
-                          (let ((op (car param-lst2071197)))
-                            (let ((param-lst2071197 (cdr param-lst2071197)))
-                              (let ((lst1 (car param-lst2071197)))
-                                (let ((param-lst2071197 (cdr param-lst2071197)))
-                                  (let ((list-of-lists param-lst2071197))
-                                    (let ((combined_lst (cons lst1 list-of-lists)))
-                                      (let ((t2071218 (car combined_lst)))
-                                        (let ((t2071219 (null? t2071218)))
-                                          (if t2071219
-                                              null
-                                              (let ((t2071220 (map1 car combined_lst)))
-                                                (let ((t2071221 (apply op t2071220)))
-                                                  (let ((t2071222 (map1 cdr combined_lst)))
-                                                    (let ((t2071223 (apply map op t2071222)))
-                                                      (cons t2071221 t2071223))))))))))))))))))))))
-        (let ((ormap
+              (λ (map1)
+                (λ (op lst)
+                  (let ((t1024865 (null? lst)))
+                    (if t1024865
+                        null
+                        (let ((t1024866 (car lst)))
+                          (let ((t1024867 (op t1024866)))
+                            (let ((t1024868 (cdr lst)))
+                              (let ((t1024869 (map1 op t1024868)))
+                                (cons t1024867 t1024869))))))))))))
+        (let ((map
                (Ycomb
-                (λ (ormap)
-                  (λ param-lst2071198
-                    (let ((t2071224 (length '(param-lst2071198))))
-                      (let ((t2071225 (< 1 t2071224)))
-                        (if t2071225
+                (λ (map)
+                  (λ param-lst1024851
+                    (let ((t1024870 (length '(param-lst1024851))))
+                      (let ((t1024871 (< 2 t1024870)))
+                        (if t1024871
                             (raise "invalid parameter list!")
-                            (let ((op (car param-lst2071198)))
-                              (let ((param-lst2071198 (cdr param-lst2071198)))
-                                (let ((lst param-lst2071198))
-                                  (let loop ((lst lst))
-                                    (let ((t2071227
-                                           (let ((or2071199 (null? lst)))
-                                             (if or2071199 or2071199 (let ((t2071226 (car lst))) (null? t2071226))))))
-                                      (if t2071227
-                                          false
-                                          (let ((t2071228 (cdar lst)))
-                                            (let ((t2071229 (length t2071228)))
-                                              (let ((t2071230 (= 0 t2071229)))
-                                                (if t2071230
-                                                    (let ((t2071231 (map car lst))) (apply op t2071231))
-                                                    (let ((t2071232 (map car lst)))
-                                                      (let ((t2071233 (apply op t2071232)))
-                                                        (let ((t2071234 (if t2071233 #f #t)))
-                                                          (let ((t2071235 (equal? false t2071234)))
-                                                            (if t2071235
-                                                                (let ((t2071236 (map car lst))) (apply op t2071236))
-                                                                (let ((t2071237 (map cdr lst)))
-                                                                  (loop t2071237)))))))))))))))))))))))))
-          (let ((andmap
+                            (let ((op (car param-lst1024851)))
+                              (let ((param-lst1024851
+                                     (cdr param-lst1024851)))
+                                (let ((lst1 (car param-lst1024851)))
+                                  (let ((param-lst1024851
+                                         (cdr param-lst1024851)))
+                                    (let ((list-of-lists
+                                           param-lst1024851))
+                                      (let ((combined_lst
+                                             (cons lst1 list-of-lists)))
+                                        (let ((t1024872
+                                               (car combined_lst)))
+                                          (let ((t1024873
+                                                 (null? t1024872)))
+                                            (if t1024873
+                                                null
+                                                (let ((t1024874
+                                                       (map1
+                                                        car
+                                                        combined_lst)))
+                                                  (let ((t1024875
+                                                         (apply
+                                                          op
+                                                          t1024874)))
+                                                    (let ((t1024876
+                                                           (map1
+                                                            cdr
+                                                            combined_lst)))
+                                                      (let ((t1024877
+                                                             (apply
+                                                              map
+                                                              op
+                                                              t1024876)))
+                                                        (cons
+                                                         t1024875
+                                                         t1024877))))))))))))))))))))))
+          (let ((ormap
                  (Ycomb
-                  (λ (andmap)
-                    (λ param-lst2071200
-                      (let ((t2071238 (length '(param-lst2071200))))
-                        (let ((t2071239 (< 1 t2071238)))
-                          (if t2071239
+                  (λ (ormap)
+                    (λ param-lst1024852
+                      (let ((t1024878 (length '(param-lst1024852))))
+                        (let ((t1024879 (< 1 t1024878)))
+                          (if t1024879
                               (raise "invalid parameter list!")
-                              (let ((op (car param-lst2071200)))
-                                (let ((param-lst2071200 (cdr param-lst2071200)))
-                                  (let ((lst param-lst2071200))
+                              (let ((op (car param-lst1024852)))
+                                (let ((param-lst1024852
+                                       (cdr param-lst1024852)))
+                                  (let ((lst param-lst1024852))
                                     (let loop ((lst lst))
-                                      (let ((t2071241
-                                             (let ((or2071201 (null? lst)))
-                                               (if or2071201 or2071201 (let ((t2071240 (car lst))) (null? t2071240))))))
-                                        (if t2071241
-                                            true
-                                            (let ((t2071242 (cdar lst)))
-                                              (let ((t2071243 (length t2071242)))
-                                                (let ((t2071244 (= 0 t2071243)))
-                                                  (if t2071244
-                                                      (let ((t2071245 (map car lst))) (apply op t2071245))
-                                                      (let ((t2071246 (map car lst)))
-                                                        (let ((t2071247 (apply op t2071246)))
-                                                          (let ((t2071248 (equal? false t2071247)))
-                                                            (if t2071248
-                                                                false
-                                                                (let ((t2071249 (map cdr lst)))
-                                                                  (loop t2071249))))))))))))))))))))))))
-            (let ((foldr
+                                      (let ((t1024881
+                                             (let ((or1024853
+                                                    (null? lst)))
+                                               (if or1024853
+                                                   or1024853
+                                                   (let ((t1024880
+                                                          (car lst)))
+                                                     (null? t1024880))))))
+                                        (if t1024881
+                                            false
+                                            (let ((t1024882 (cdar lst)))
+                                              (let ((t1024883
+                                                     (length t1024882)))
+                                                (let ((t1024884
+                                                       (= 0 t1024883)))
+                                                  (if t1024884
+                                                      (let ((t1024885
+                                                             (map car lst)))
+                                                        (apply op t1024885))
+                                                      (let ((t1024886
+                                                             (map car lst)))
+                                                        (let ((t1024887
+                                                               (apply
+                                                                op
+                                                                t1024886)))
+                                                          (let ((t1024888
+                                                                 (if t1024887
+                                                                     #f
+                                                                     #t)))
+                                                            (let ((t1024889
+                                                                   (equal?
+                                                                    false
+                                                                    t1024888)))
+                                                              (if t1024889
+                                                                  (let ((t1024890
+                                                                         (map
+                                                                          car
+                                                                          lst)))
+                                                                    (apply
+                                                                     op
+                                                                     t1024890))
+                                                                  (let ((t1024891
+                                                                         (map
+                                                                          cdr
+                                                                          lst)))
+                                                                    (loop
+                                                                     t1024891)))))))))))))))))))))))))
+            (let ((andmap
                    (Ycomb
-                    (λ (foldr)
-                      (λ param-lst2071202
-                        (let ((t2071250 (length '(param-lst2071202))))
-                          (let ((t2071251 (< 2 t2071250)))
-                            (if t2071251
+                    (λ (andmap)
+                      (λ param-lst1024854
+                        (let ((t1024892 (length '(param-lst1024854))))
+                          (let ((t1024893 (< 1 t1024892)))
+                            (if t1024893
                                 (raise "invalid parameter list!")
-                                (let ((f (car param-lst2071202)))
-                                  (let ((param-lst2071202 (cdr param-lst2071202)))
-                                    (let ((acc (car param-lst2071202)))
-                                      (let ((param-lst2071202 (cdr param-lst2071202)))
-                                        (let ((lsts param-lst2071202))
-                                          (let ((t2071252 (ormap null? lsts)))
-                                            (if t2071252
-                                                acc
-                                                (let ((xs (map car lsts)))
-                                                  (let ((rsts (map cdr lsts)))
-                                                    (let ((acc+
-                                                           (let ((t2071253 (append* rsts '())))
-                                                             (let ((t2071254 (cons acc t2071253)))
-                                                               (let ((t2071255 (cons f t2071254))) (apply foldr t2071255))))))
-                                                      (let ((t2071256 (cons acc+ '())))
-                                                        (let ((t2071257 (append* xs t2071256)))
-                                                          (apply f t2071257)))))))))))))))))))))
-              (let ((foldl
+                                (let ((op (car param-lst1024854)))
+                                  (let ((param-lst1024854
+                                         (cdr param-lst1024854)))
+                                    (let ((lst param-lst1024854))
+                                      (let loop ((lst lst))
+                                        (let ((t1024895
+                                               (let ((or1024855
+                                                      (null? lst)))
+                                                 (if or1024855
+                                                     or1024855
+                                                     (let ((t1024894
+                                                            (car lst)))
+                                                       (null? t1024894))))))
+                                          (if t1024895
+                                              true
+                                              (let ((t1024896 (cdar lst)))
+                                                (let ((t1024897
+                                                       (length t1024896)))
+                                                  (let ((t1024898
+                                                         (= 0 t1024897)))
+                                                    (if t1024898
+                                                        (let ((t1024899
+                                                               (map car lst)))
+                                                          (apply op t1024899))
+                                                        (let ((t1024900
+                                                               (map car lst)))
+                                                          (let ((t1024901
+                                                                 (apply
+                                                                  op
+                                                                  t1024900)))
+                                                            (let ((t1024902
+                                                                   (equal?
+                                                                    false
+                                                                    t1024901)))
+                                                              (if t1024902
+                                                                  false
+                                                                  (let ((t1024903
+                                                                         (map
+                                                                          cdr
+                                                                          lst)))
+                                                                    (loop
+                                                                     t1024903))))))))))))))))))))))))
+              (let ((foldr
                      (Ycomb
-                      (λ (foldl)
-                        (λ param-lst2071203
-                          (let ((t2071258 (length '(param-lst2071203))))
-                            (let ((t2071259 (< 2 t2071258)))
-                              (if t2071259
+                      (λ (foldr)
+                        (λ param-lst1024856
+                          (let ((t1024904 (length '(param-lst1024856))))
+                            (let ((t1024905 (< 2 t1024904)))
+                              (if t1024905
                                   (raise "invalid parameter list!")
-                                  (let ((f (car param-lst2071203)))
-                                    (let ((param-lst2071203 (cdr param-lst2071203)))
-                                      (let ((acc (car param-lst2071203)))
-                                        (let ((param-lst2071203 (cdr param-lst2071203)))
-                                          (let ((lsts param-lst2071203))
-                                            (let ((t2071260 (ormap null? lsts)))
-                                              (if t2071260
+                                  (let ((f (car param-lst1024856)))
+                                    (let ((param-lst1024856
+                                           (cdr param-lst1024856)))
+                                      (let ((acc (car param-lst1024856)))
+                                        (let ((param-lst1024856
+                                               (cdr param-lst1024856)))
+                                          (let ((lsts param-lst1024856))
+                                            (let ((t1024906
+                                                   (ormap null? lsts)))
+                                              (if t1024906
                                                   acc
                                                   (let ((xs (map car lsts)))
-                                                    (let ((rsts (map cdr lsts)))
+                                                    (let ((rsts
+                                                           (map cdr lsts)))
                                                       (let ((acc+
-                                                             (let ((t2071261 (cons acc '())))
-                                                               (let ((t2071262 (append* xs t2071261))) (apply f t2071262)))))
-                                                        (let ((t2071263 (append* rsts '())))
-                                                          (let ((t2071264 (cons acc+ t2071263)))
-                                                            (let ((t2071265 (cons f t2071264)))
-                                                              (apply foldl t2071265))))))))))))))))))))))
-                (let ((reverse
+                                                             (let ((t1024907
+                                                                    (append1
+                                                                     rsts
+                                                                     '())))
+                                                               (let ((t1024908
+                                                                      (cons
+                                                                       acc
+                                                                       t1024907)))
+                                                                 (let ((t1024909
+                                                                        (cons
+                                                                         f
+                                                                         t1024908)))
+                                                                   (apply
+                                                                    foldr
+                                                                    t1024909))))))
+                                                        (let ((t1024910
+                                                               (cons
+                                                                acc+
+                                                                '())))
+                                                          (let ((t1024911
+                                                                 (append1
+                                                                  xs
+                                                                  t1024910)))
+                                                            (apply
+                                                             f
+                                                             t1024911)))))))))))))))))))))
+                (let ((foldl
                        (Ycomb
-                        (λ (reverse)
-                          (λ (lst)
-                            (let ((t2071266 (null? lst)))
-                              (if t2071266
-                                  lst
-                                  (let ((t2071267 (cdr lst)))
-                                    (let ((t2071268 (reverse t2071267)))
-                                      (let ((t2071269 (car lst)))
-                                        (let ((t2071270 (cons t2071269 '()))) (append* t2071268 t2071270))))))))))))
-                  (let ((append
+                        (λ (foldl)
+                          (λ param-lst1024857
+                            (let ((t1024912
+                                   (length '(param-lst1024857))))
+                              (let ((t1024913 (< 2 t1024912)))
+                                (if t1024913
+                                    (raise "invalid parameter list!")
+                                    (let ((f (car param-lst1024857)))
+                                      (let ((param-lst1024857
+                                             (cdr param-lst1024857)))
+                                        (let ((acc
+                                               (car param-lst1024857)))
+                                          (let ((param-lst1024857
+                                                 (cdr param-lst1024857)))
+                                            (let ((lsts param-lst1024857))
+                                              (let ((t1024914
+                                                     (ormap null? lsts)))
+                                                (if t1024914
+                                                    acc
+                                                    (let ((xs
+                                                           (map car lsts)))
+                                                      (let ((rsts
+                                                             (map
+                                                              cdr
+                                                              lsts)))
+                                                        (let ((acc+
+                                                               (let ((t1024915
+                                                                      (cons
+                                                                       acc
+                                                                       '())))
+                                                                 (let ((t1024916
+                                                                        (append1
+                                                                         xs
+                                                                         t1024915)))
+                                                                   (apply
+                                                                    f
+                                                                    t1024916)))))
+                                                          (let ((t1024917
+                                                                 (append1
+                                                                  rsts
+                                                                  '())))
+                                                            (let ((t1024918
+                                                                   (cons
+                                                                    acc+
+                                                                    t1024917)))
+                                                              (let ((t1024919
+                                                                     (cons
+                                                                      f
+                                                                      t1024918)))
+                                                                (apply
+                                                                 foldl
+                                                                 t1024919))))))))))))))))))))))
+                  (let ((reverse
                          (Ycomb
-                          (λ (append)
-                            (λ param-lst2071204
-                              (let ((t2071271 (length '(param-lst2071204))))
-                                (let ((t2071272 (< 1 t2071271)))
-                                  (if t2071272
-                                      (raise "invalid parameter list!")
-                                      (let ((xs (car param-lst2071204)))
-                                        (let ((param-lst2071204 (cdr param-lst2071204)))
-                                          (let ((x param-lst2071204))
-                                            (let ((t2071273 (cons xs '())))
-                                              (let ((t2071274 (append* t2071273 x)))
-                                                (let ((t2071275 (reverse t2071274)))
-                                                  (foldl append* null t2071275)))))))))))))))
-                    (let ((filter
+                          (λ (reverse)
+                            (λ (lst)
+                              (let ((t1024920 (null? lst)))
+                                (if t1024920
+                                    lst
+                                    (let ((t1024921 (cdr lst)))
+                                      (let ((t1024922 (reverse t1024921)))
+                                        (let ((t1024923 (car lst)))
+                                          (let ((t1024924
+                                                 (cons t1024923 '())))
+                                            (append1
+                                             t1024922
+                                             t1024924))))))))))))
+                    (let ((append
                            (Ycomb
-                            (λ (filter)
-                              (λ (op lst)
-                                (let ((t2071276 (null? lst)))
-                                  (if t2071276
-                                      null
-                                      (let ((t2071277 (car lst)))
-                                        (let ((t2071278 (op t2071277)))
-                                          (if t2071278
-                                              (let ((t2071279 (car lst)))
-                                                (let ((t2071280 (cdr lst)))
-                                                  (let ((t2071281 (filter op t2071280))) (cons t2071279 t2071281))))
-                                              (let ((t2071282 (cdr lst))) (filter op t2071282))))))))))))
-                      (let ((t2071283 (list 1 3))) (apply + t2071283)))))))))))))
+                            (λ (append)
+                              (λ param-lst1024858
+                                (let ((t1024925
+                                       (length '(param-lst1024858))))
+                                  (let ((t1024926 (< 1 t1024925)))
+                                    (if t1024926
+                                        (raise "invalid parameter list!")
+                                        (let ((xs (car param-lst1024858)))
+                                          (let ((param-lst1024858
+                                                 (cdr param-lst1024858)))
+                                            (let ((x param-lst1024858))
+                                              (let ((t1024927
+                                                     (cons xs '())))
+                                                (let ((t1024928
+                                                       (append1
+                                                        t1024927
+                                                        x)))
+                                                  (let ((t1024929
+                                                         (reverse
+                                                          t1024928)))
+                                                    (foldl
+                                                     append1
+                                                     null
+                                                     t1024929)))))))))))))))
+                      (let ((filter
+                             (Ycomb
+                              (λ (filter)
+                                (λ (op lst)
+                                  (let ((t1024930 (null? lst)))
+                                    (if t1024930
+                                        null
+                                        (let ((t1024931 (car lst)))
+                                          (let ((t1024932 (op t1024931)))
+                                            (if t1024932
+                                                (let ((t1024933 (car lst)))
+                                                  (let ((t1024934
+                                                         (cdr lst)))
+                                                    (let ((t1024935
+                                                           (filter
+                                                            op
+                                                            t1024934)))
+                                                      (cons
+                                                       t1024933
+                                                       t1024935))))
+                                                (let ((t1024936 (cdr lst)))
+                                                  (filter
+                                                   op
+                                                   t1024936))))))))))))
+                        (let ((f
+                               (Ycomb
+                                (λ (f)
+                                  (λ (n)
+                                    (let ((t1024937 (= n 0)))
+                                      (if t1024937
+                                          1
+                                          (let ((t1024938 (- n 1)))
+                                            (let ((t1024939 (f t1024938)))
+                                              (* n t1024939))))))))))
+                          (f 5)))))))))))))
