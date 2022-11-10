@@ -32,7 +32,7 @@
        (normalize body k)]
       
       #;[`(let ([,xs ,rhss] ...) ,body)
-       (k `(let ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
+         (k `(let ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
 
      
       
@@ -44,8 +44,8 @@
              ,(normalize-term
                `(let ,rest ,body))))]
 
-       [`(let ,var ([,xs ,rhss] ...) ,body)
-       (k `(let ,var ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
+      #;[`(let ,var ([,xs ,rhss] ...) ,body)
+         (k `(let ,var ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
 
 
       [`(if ,grd ,texp ,fexp)
@@ -53,6 +53,11 @@
                              (k `(if ,param
                                      ,(normalize-term texp)
                                      ,(normalize-term fexp)))))]
+
+      [`(apply-prim ,op ,e0)
+       (normalize-name e0
+                       (λ (param)
+                         (k `(apply-prim ,op ,param))))]
       
       [`(apply ,es ...)
        (normalize-name* es
@@ -99,5 +104,14 @@
    (pretty-format
     (anf-convert (desugar e)))))
 
-;(run '(apply (lambda (a b c) b) (list 1 (list 5 6) 4)))
+;(run '(apply (λ (a b c) b) (list 1 (list 5 6) 4)))
 ;(run '(apply + (let* ([a 3] [b (* 2 a)]) (list a b))))
+;(anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))
+#;(anf-convert (desugar (add-prims-to-prog
+                         '(letrec ([f (λ (n) 
+                                        (if (= n 0)
+                                            1
+                                            (* n (f (- n 1)))))])
+                            (f 5)))))
+
+; (pretty-print (anf-convert (desugar (add-prims-to-prog '(foldl + 0 (list 1 2 3))))))

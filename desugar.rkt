@@ -13,9 +13,9 @@
 (define (add-prims-to-prog prog)
   (foldl (λ (op acc)
            `(let ([,op (λ args (apply-prim ,op args))]) ,acc))
-         
+
          (foldr (λ (builtin prog)
-                  (match-define `(,name ,lam) builtin) 
+                  (match-define `(,name ,lam) builtin)
                   `(letrec ([,name ,lam]) ,prog))
                 prog
                 builtins)
@@ -27,22 +27,22 @@
     [(list 'unquote exp)
      (if (= n 1)
          (desugar exp)
-         (list 'list ''unquote 
+         (list 'list ''unquote
                (desugar-qq (- n 1) exp)))]
-    
+
     [`(quasiquote ,qq-exp)
      `(list 'quasiquote ,(desugar-qq (+ n 1) qq-exp))]
-    
+
     [(cons (list 'unquote-splicing exp) rest)
      (if (= n 1)
          `(append1 ,exp ,(desugar-qq n rest))
          (cons (list 'unquote-splicing (desugar-qq (- n 1) exp))
                (desugar-qq n rest)))]
-    
+
     [`(,qq-exp1 . ,rest)
      `(cons ,(desugar-qq n qq-exp1)
             ,(desugar-qq n rest))]
-       
+
     [else
      (desugar `',qq-exp)]))
 
@@ -51,7 +51,7 @@
   ;(displayln (~a "desugar-->: " exp))
   (match exp
     [(? symbol?) exp]
-    
+
     [`(quote ,datum)
      (let loop ([temp_datum datum])
        (match temp_datum
@@ -62,33 +62,37 @@
                            ,(loop (cdr temp_datum)))]
          [else
           (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
-    
-    
+
+
     #;[`(let ([,xs ,rhs] ...) ,body)
        (desugar `((λ ,xs ,body) ,@rhs))]
-    
+
     [`(let ([,xs ,rhss] ...) ,body)
      `(let ,(map (λ (x rhs) `(,x ,(desugar rhs))) xs rhss) ,(desugar body))]
-    
+
+    [`(let ,var ([,xs ,rhss] ...) ,body)
+     (desugar `(letrec ([,var (λ ,xs ,body)]) (,var ,@rhss)))]
+
 
     [`(let* () ,ebody) (desugar ebody)]
-    [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      
+    [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)
      (desugar `(let ([,lhs ,rhs])
                  (let* ,e-pairs ,ebody)))]
 
     [`(letrec ([,fname ,exp]) ,body)
      (match fname
        [`Ycomb (desugar `(let ([,fname ,exp]) ,body))]
+       ;[`halt (desugar `(let ([,fname ,exp]) ,body))]
        [_
         (desugar `(let ([,fname (Ycomb (λ (,fname) ,exp))]) ,body))])]
 
-    
+
     [`(,(? λ-or-lambda?) ,(? symbol? args) ,body)
      `(λ ,args ,(desugar body))]
 
     [`(,(? λ-or-lambda?) ,(? (listof symbol?) args) ,body)
      `(λ ,args ,(desugar body))]
-    
+
     [`(,(? λ-or-lambda?) ,improper-args ,body)
      (define (extract-params args)
        (match args
@@ -98,7 +102,7 @@
          [(? symbol? x) (cons null x)]
          [_
           (raise `(error ,(format "invalid parameter list! ~a" improper-args)))]))
-     
+
      (match-define (cons req opt) (extract-params improper-args))
 
      (define arg-x (gensym `param-lst))
@@ -108,41 +112,42 @@
          (match req
            [(? null? req)
             `(let ([,opt ,arg-x]) ,(desugar body))]
-           [_ 
+           [_
             `(let ([,(car req) (car ,arg-x)]
                    [,arg-x (cdr ,arg-x)])
                ,(loop (cdr req)))])))
 
      `(λ ,arg-x
-        (if (< ,(length req) (length '(,arg-x)))
+        ;(if (< ,(length req) (length `(,arg-x)))
+        (if (< ,(length req) 1)
             (raise "invalid parameter list!")
             ,(simplify-lambda arg-x req opt body)))]
 
-    
+
 
     ; for define
     #;[`(,(? λ-or-lambda?) ,args . ,body)
        `(λ ,args ,(desugar body))]
-    
+
 
     [`(pushPrompt ,ea ,eb)
      `(pushPrompt ,(desugar ea) ,(desugar eb))]
-    
+
     [`(withSubCont ,ea ,ef)
      `(withSubCont ,(desugar ea) ,(desugar ef))]
 
     [`(pushSubCont ,eseq ,eb)
      `(pushSubCont ,(desugar eseq) ,(desugar eb))]
-    
+
     [`(and) #t]
     [`(and ,e0) (desugar e0)]
     [`(and ,e0 ,es ...)
      `(if ,(desugar e0)
           ,(desugar `(and ,@es))
           #f)]
-      
+
     [`(or) #f]
-    [`(or ,e0) (desugar e0)]      
+    [`(or ,e0) (desugar e0)]
     [`(or ,e0 ,es ...)
      (define temp (gensym 'or))
      (desugar `(let ([,temp ,e0])
@@ -155,7 +160,7 @@
      `(if ,(desugar grd)
           ,(desugar texp)
           ,(desugar fexp))]
-    
+
 
     [`(cond) '(void)]
     [`(cond [else ,e0] ,eb ...) (desugar e0)]
@@ -166,20 +171,20 @@
 
     [`(apply ,e0 ,e1)
      `(apply ,(desugar e0) ,(desugar e1))]
-    
-    
+
+
     [`(quasiquote ,exp)
      (desugar-qq 1 exp)]
-    
-    
-   
+
+
+
     [`(quote . ,datum) exp]
     [(or (? number?) (? boolean?) (? string?) `(void)) exp]
 
-    
+
     [`(,ef ,ea-list ...)
      (cons (desugar ef) (map desugar ea-list))]
-    
+
     [else (raise `(error ,(format "Unknown S-expression: ~a" exp)))]))
 
 ;(desugar '(equal? 2 4))

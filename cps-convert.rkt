@@ -1,98 +1,101 @@
 #lang racket
+(require "desugar.rkt" "prims.rkt" "anf-convert.rkt")
+(provide cps-convert)
 
-(define (T-c expr c)
-  ;(displayln (~a "T-c: " expr "\nc: "c "\n---"))
-  (match expr
-    [`(λ . ,_)     `(,c ,(M expr))]
-    [ (or (? symbol?) (? number?))  `(,c ,(M expr))]
-    [`(quote ,datum) `(,c ',datum)]
-    
-    [`(apply-prim ,op ,args)
-     (define prm (gensym 'prm))
-     (T-c `(let ([,prm (apply-prim ,op ,args)]) ,prm) c)]
-    
-    [`(let ([,lhs (apply-prim ,op ,args)]) ,body)
-     `(let ([,lhs (apply-prim ,op ,(M args))])
-        ,(T-c body c))]
+(define (cps-convert prog)
 
-    [`(let ([,lhs (λ ,args ,prim-body)]) ,body)
-     `(let ([,lhs ,(M `(λ ,args ,prim-body))])
-        ,(T-c body c))]
+  (define (T-c expr c)
+    ;(displayln (~a "T-c: " expr "\nc: "c "\n---"))
+    (match expr
+      ; [`(λ . ,_)     `(,c ,(M expr))]
+      ; [ (or (? symbol?) (? number?) (? boolean?) (? string?))  `(,c ,(M expr))]
+      ; [`(quote ,datum) `(,c ',datum)]
 
-    [`(let ([,lhs ,rhs]) ,body)
-     (T-c rhs `(λ (,lhs) ,(T-c body c)))]
+      [`(λ . ,_)`(,c '() ,(M expr))]
+      [ (or (? symbol?) (? number?) (? boolean?) (? string?))  `(,c '() ,(M expr))]
+      [`(quote ,datum) `(,c '() ',datum)]
 
-    [`(if ,grd ,texp ,fexp)
-     `(if ,grd ,(T-c texp c) ,(T-c fexp c))]
-    
-    [`(apply ,e0 ,e1)
-     (define lst (gensym 'lst))
-     `(let ([,lst (cons ,c ,(M e1))])
-        (apply ,(M e0) ,lst))]
-    
-    [`(,f ,es ...)
-     `(,(M f) ,c ,@(map M es))]))
-     
-(define (M expr)
-  ;(displayln (~a "M: " expr "\n---"))
-  (match expr
-    [`(λ (,var ...) ,body)
-     (define $k (gensym 'kont))
-     
-     `(λ (,$k ,@var)
-        ,(T-c body $k))]
-    
-    [`(λ ,var ,body)
-     (define $k (gensym 'kont))
 
-     `(λ ,var
-        (let ([,$k (car ,var)])
-          (let ([,var (cdr ,var)])
-            ,(T-c body $k)
-            )))]
+      [`(apply-prim ,op ,args)
+       (define prm (gensym 'prm))
+       (T-c `(let ([,prm (apply-prim ,op ,args)]) ,prm) c)]
 
-    ;handle other atomic values
-    [(or (? symbol?) (? number?) (? boolean?) (? string?) `(void)) expr]
-    [`(quote ,datum) `',datum]))
 
-     
+      [`(let ([,lhs (apply-prim ,op ,args)]) ,body)
+       `(let ([,lhs (apply-prim ,op ,(M args))])
+          ,(T-c body c))]
+
+      [`(let ([,lhs (prim ,op ,(? symbol? args) ...)]) ,body)
+         `(let ([,lhs (prim ,op ,@(map M args))])
+            ,(T-c body c))]
+
+
+      [`(let ([,lhs (λ ,args ,prim-body)]) ,body)
+       `(let ([,lhs ,(M `(λ ,args ,prim-body))])
+          ,(T-c body c))]
+
+      [`(let ([,lhs ',val]) ,body)
+       `(let ([,lhs ',val])
+          ,(T-c body c))]
+
+      ;continuation
+      ; [`(let ([,lhs ,rhs]) ,body)
+      ; (displayln (~a "continuation"))
+      ;    (T-c rhs `(λ (,lhs) ,(T-c body c)))]
+
+      [`(let ([,lhs ,rhs]) ,e0)
+       (define let-cont (gensym 'let-cont))
+       (T-c rhs `(λ (let-cont ,lhs) ,(T-c e0 c)))]
+
+      [`(if ,grd ,texp ,fexp)
+       `(if ,(M grd) ,(T-c texp c) ,(T-c fexp c))]
+
+      [`(apply ,e0 ,e1)
+       (define lst (gensym 'lst))
+       `(let ([,lst (prim cons ,c ,(M e1))])
+          (apply ,(M e0) ,lst))]
+
+      [`(,f ,es ...)
+       `(,(M f) ,c ,@(map M es))]))
+
+  (define (M expr)
+    ;(displayln (~a "M: " expr "\n---"))
+    (match expr
+      [`(λ (,var ...) ,body)
+       (define $k (gensym 'kont))
+
+       `(λ (,$k ,@var) ,(T-c body $k))]
+
+      [`(λ ,var ,body)
+         (define $k (gensym 'kkont))
+
+         `(λ ,var
+            (let ([,$k (prim car ,var)])
+              (let ([,var (prim cdr ,var)])
+                ,(T-c body $k))))]
+
+      ;handle other atomic values
+      [(or (? symbol?) (? number?) (? boolean?) (? string?)) expr]
+      [`(quote ,datum) `',datum]))
+
+  (T-c prog 'halt))
+
+
 
 
 ;; Examples
 ;(M '(λ (x) y))
-;(T-c '(λ (x) x) 'halt)
-;(T-c '(g a) 'halt)
 
-(T-c '(let ([x ((λ (z) z) 2)]) x) 'halt)
+;(cps-convert '(let ([x ((λ (z) z) 2)]) x))
 
-(T-c '(let ((positive? (λ args (apply-prim positive? args)))) '(1 2 3)) 'halt)
+;(cps-convert '(let ((car (λ args (apply-prim car args)))) '(1 2 3)))
 
-(T-c '(let ((f
-             (Ycomb
-              (λ (f)
-                (λ (n)
-                  (let ((t1024937 (= n 0)))
-                    (if t1024937
-                        1
-                        (let ((t1024938 (- n 1)))
-                          (let ((t1024939 (f t1024938)))
-                            (* n t1024939))))))))))
-        (f 5)) 'halt)
-
-
-#;(T-c '(let ((f
-               (((λ (x) (x x))
-                 (λ (g)
-                   (λ (f)
-                     (f (λ vs (let ((t844029 (g g))) (let ((t844030 (t844029 f))) (apply t844030 vs))))))))
-                (λ (f)
-                  (λ (n)
-                    (let ((t334983 (= n 0)))
-                      (if t334983
-                          1
-                          (let ((t334984 (- n 1)))
-                            (let ((t334985 (f t334984)))
-                              (* n t334985))))))))))
-          (f 5)) 'halt)
-
-
+;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(null? (list 1 3)))))))
+;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
+;(pretty-print (anf-convert (desugar (add-prims-to-prog '(+ 2 3 5)))))
+;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 3 5))))))
+;(pretty-print (cps-convert (anf-convert (desugar '(+ 2 1)))))
+;(cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2))))))
+;(cps-convert (anf-convert (desugar (add-prims-to-prog '(apply (λ (a b c) b) (list 1 (list 5 6) 4))))))
+; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(map + (list 1 2)))))))
+;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(map1 (lambda (x) (+ 1 x)) (list 1 2)))))))

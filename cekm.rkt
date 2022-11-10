@@ -2,9 +2,9 @@
 
 (provide cekm-interp)
 
-(require "parser.rkt" "desugar.rkt" "prims.rkt" "anf-convert.rkt")
+(require "parser.rkt" "desugar.rkt" "prims.rkt" "anf-convert.rkt" "cps-convert.rkt")
 (require (rename-in racket/base (eval racket-eval)))
-         
+
 ;(define default-prims '(* + - / expt = > < car cdr cons equal? null?))
 ;(define default-prims '(* +)); - / expt = car cdr cons equal? null?))
 
@@ -15,7 +15,9 @@
          default-prims))
 
 (define (racket-apply proc lst)
+  ;(displayln (~a "racket-apply : >proc: " proc " list: " lst))
   (apply proc lst))
+
 
 (define (cekm-interp prog (env prims))
   ; Helper function to check if symbol λ or tag lambda
@@ -23,19 +25,25 @@
     (match str
       [(or (== 'lambda) (== 'λ)) #t]
       [else #f]))
-  
+
   (define (eval exp env kont m-kont)
-    ;(displayln (~a "\n>>>eval : " (list '--exp: exp '--env: env '--kont: kont)))
-    (match exp  
+    (displayln (~a "\n>>>eval :exp:"))
+    (pretty-print exp)
+
+    ;(displayln (~a "\n>>>eval : env:"))
+    ;(pretty-print env)
+    ;(displayln (~a "\n>>>eval : " exp )) ;" env: " env))
+    (match exp
       [(or (? number?) (? boolean?) (? string?)
            (? null?))
        (ret exp kont m-kont)]
 
       #;[`(quote ,datum)
          (ret `(quote ,datum) kont m-kont)]
-      ;[`(quasiquote ,qq-exp)
-      ;(ret `(quote ,datum) kont m-kont)]
-      
+
+      ; [`(quasiquote ,qq-exp)
+      ; (ret `(quote ,qq-exp) kont m-kont)]
+
       [`(quote ,datum)
        (let loop ([temp_datum datum])
          (match temp_datum
@@ -49,11 +57,9 @@
                             env kont m-kont)]
            [else
             (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
-      
+
       [`(,(? λ-or-lambda?) ,args ,body)
        (ret `(clo ,exp ,env) kont m-kont)]
-       
-      
 
       [`(if ,grd, texp, fexp)
        (eval grd env `(ifk ,texp ,fexp ,env ,kont) m-kont)]
@@ -63,9 +69,9 @@
       [`(and ,e0 ,es ...)
        (eval `(if ,e0 (and ,@es) #f)
              env kont m-kont)]
-      
+
       [`(or) (ret #f kont m-kont)]
-      [`(or ,e0) (eval e0 env kont m-kont)]      
+      [`(or ,e0) (eval e0 env kont m-kont)]
       [`(or ,e0 ,es ...)
        (define temp (gensym 'or))
        (eval `(let ([,temp ,e0])
@@ -86,7 +92,7 @@
                     ,temp
                     (cond ,@es)))
              env kont m-kont)]
-      
+
       [`(cond [,e0 ,e1] ,es ...)
        (eval `(if ,e0 ,e1 (cond ,@es)) env kont m-kont)]
 
@@ -97,19 +103,19 @@
                     (,pe ,temp)
                     (cond ,@es)))
              env kont m-kont)]
-      
+
 
       [`(let ([,xs ,rhs] ...) ,body)
        (eval `((λ ,xs ,body) ,@rhs) env kont m-kont)]
 
       [`(let* () ,ebody) (eval ebody env kont m-kont)]
-      [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)      
+      [`(let* ([,lhs ,rhs] ,e-pairs ...) ,ebody)
        (eval `(let ([,lhs ,rhs]) (let* ,e-pairs ,ebody)) env kont m-kont)]
 
       ;[`(letrec ([,var ,exp] ,e-pairs ...) ,body)
       [`(letrec ([,var ,exp]) ,body)
        (eval `(let ([,var (,Ycomb (λ (,var)
-                                       ,exp))]) ,body) env kont m-kont)]
+                                    ,exp))]) ,body) env kont m-kont)]
 
       [`(newPrompt)
        (ret `(prompt ,(gensym 'prompt)) kont m-kont)]
@@ -123,23 +129,37 @@
       [`(pushSubCont ,eseq ,eb)
        (eval eseq env `(pushSubContκ ,eb ,env ,kont) m-kont)]
 
-
-      
       [`(apply ,e0 ,e1)
        (eval e0 env `(apply-ark ,e1 ,env ,kont) m-kont)]
 
+      ;(apply map op (map1 cdr combined_lst))?
+      ;(prim cons (lambda ....))?
+
+
+      [`(apply-prim halt ,x)
+       ;(hash-ref env x)
+       (car (hash-ref env x))]
+
+      [`(prim ,op ,(? symbol? xs) ...)
+       ;  (displayln (~a "op: " op "\nxs: " xs ))
+       (ret (racket-apply
+             (racket-eval op (make-base-namespace))
+             (map (λ (x) (hash-ref env x)) xs)) kont m-kont)]
+
       [`(apply-prim ,opr ,x)
+       ;  (when (or (equal? 'car opr) (equal? 'cdr opr) (equal? '+ opr))
+       ;    (displayln (~a "env-hash: " (hash-ref env x))))
+
        (ret (racket-apply (racket-eval opr (make-base-namespace)) (hash-ref env x)) kont m-kont)]
-      
+
+
       [`(,ef ,ea-list ...)
-       ;(display "here...")
        (eval ef env `(app-k () ,ea-list ,env ,kont) m-kont)]
 
       [(? symbol? x)
-       ;(displayln x)
        (ret (hash-ref env x
                       (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
-            kont m-kont)] 
+            kont m-kont)]
 
       [else (raise `(Error occured in eval function!...State: ,exp ,env ,kont ,m-kont))]))
 
@@ -152,9 +172,12 @@
              (cons (reverse Kup) (cdr Klatest))]
             [else
              (loop (cons (car Klatest) Kup) (cdr Klatest))])))
-    
+
   (define (ret val kont m-kont)
-    ;(displayln (~a ">>>ret  : " (list '--val: val '--kont: kont '--m-kont: m-kont)))
+    ; (displayln (~a ">>>ret  : " (list '--val: val '--kont: kont '--m-kont: m-kont)))
+    ; (displayln (~a ">>>ret-val  : " val))
+    ; (when (number? val) (displayln (~a ">>>ret-val  : " val)))
+
     (match kont
       [`mt
        (match m-kont
@@ -166,7 +189,7 @@
        (if val
            (eval texp env kont m-kont)
            (eval fexp env kont m-kont))]
-      
+
 
       [`(pushPromptk ,eb ,env ,kont)
        (eval eb env 'mt (cons val (cons kont m-kont)))]
@@ -180,7 +203,7 @@
 
       [`(pushSubContκ ,eb ,env ,kont)
        (eval eb env 'mt (append (second val) (cons kont m-kont)))]
-      
+
 
       [`(apply-ark ,ea ,env ,kont)
        (eval ea env `(apply-fnk ,val ,kont) m-kont)]
@@ -190,21 +213,27 @@
 
       [`(app-k ,v-list () ,env ,sub_kont)
        (define vals (append v-list `(,val)))
+       ;(displayln (~a "vals: " vals))
        (apply (car vals) (cdr vals) sub_kont m-kont)]
-       
+
       [`(app-k ,v-list (,e0 ,e-list ...) ,env ,sub_kont)
        (eval e0 env `(app-k ,(append v-list `(,val)) ,e-list ,env ,sub_kont) m-kont)]
-     
+
       [else (raise `(Error occured in ret function!...State: ,val ,kont ,m-kont))]))
-  
+
   (define (apply vf va-list kont m-kont)
     ;(displayln (~a ">>>apply: " (list '--vf: vf '--va-list: va-list '--kont: kont '--m-kont: m-kont)))
+    ;(displayln (~a ">>>apply: vf: " vf "va-list: "va-list))
     ;(pretty-print vf)
     ;(pretty-print va-list)
     ;(pretty-print kont)
     (match vf
       [`(clo (,(? λ-or-lambda?) ,params ,eb) ,env)
-       ;(pretty-print vf)
+       ;  (pretty-print vf)
+       ;  (displayln (~a ">>>in apply, params: " params))
+       ;  (displayln (~a ">>>in apply, eb: "))
+       ;  (pretty-print eb)
+
        (if (symbol? params)
            (eval eb (hash-set env params va-list) kont m-kont)
            (if (= (length params) (length va-list))
@@ -213,57 +242,22 @@
                      kont m-kont)
                (raise `(Error number of arguments do not match))))]
 
+      [`(kont ,this_kont)
+       	   (if (= 1 (length va-list))
+               		   (ret (first va-list) this_kont)
+                           		   (raise `(Error occured applying continuation on ,(length va-list) arguments)))]
+
       [else (raise `(Error occured in apply function!...State: ,vf ,va-list ,kont ,m-kont))]))
-  
+
   (eval prog env 'mt '()))
 
 ; test interpreter
 ;(cekm-interp '(+ 420 2))
+; (cekm-interp '())
 
 ;(cekm-interp '((lambda (x) x) (lambda (y) y)))
-#;(cekm-interp '(let ((t2245027 (newPrompt)))
-                  ((λ (p)
-                     (let ((t2245025
-                            (withSubCont p (λ (k) (+ 2 1)))))
-                       (let ((t2245026 (+ 1 t2245025)))
-                         (pushPrompt p t2245026))))
-                   t2245027)))
-#;
-(cek-interp '((λ (p)
-                (pushPrompt p
-                            (+ 1
-                               (withSubCont p (λ (k) (+ 2 1))))))
-              (newPrompt)))
 
-#;(cekm-interp
-   '(+ 2 
-       (let ([p (newPrompt)])
-         (pushPrompt p
-                     (+ 1 (withSubCont p
-                                       (λ (k) 2)))))))
-
-#;(cek-interp '((λ (p)
-                  (+ 2
-                     (pushPrompt p
-                                 (if (withSubCont p
-                                                  (λ (k)
-                                                    (+ (pushSubCont k #f)
-                                                       (pushSubCont k #t))))
-                                     3
-                                     4))))
-                (newPrompt)))
-
-#;(cek-interp '(cond [else 5]))
-#;(cek-interp '(cond
-                 [(equal? 2 4)]
-                 [(equal? 3 3)]
-                 [(equal? 1 1)]))
-
-#;(cek-interp '(cond
-                 [(equal? 2 1) #t]
-                 [(equal? 2 3) #f]
-                 [else 'in-the-cond-else-block]))
-
-;(cekm-interp '(cond [(cons 2 3) => (lambda (l) l)]))
-;(cekm-interp '(if #t (if #t (if 4 #f #t) #f) #f))
-;(cekm-interp '(+ 2 ((λ (p) (pushPrompt p (+ 1 (withSubCont p (λ (k) 2))))) (newPrompt))))
+;(define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
+;(define test-1 (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2))))))
+;(cekm-interp test-1)
+; (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog '(foldl + 0 (list 1 2 3)))))))
