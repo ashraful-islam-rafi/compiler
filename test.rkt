@@ -110,56 +110,39 @@
 ;;;;;;; New test cases
 (define test-cases2
   (list
-  ;  '(+ 2 (* 3 2))
-  ;  '(+ (if 1 2 #f) 2)
-  ;  '(if (= 2 (length (list 1 4)))  #t #f)
+   '(+ 2 (* 3 2))
+   '(+ (if 1 2 #f) 2)
+   '(if (= 2 (length (list 1 4)))  #t #f)
 
-  ;  '(let ([a '2]
-  ;         [b '3])
-  ;     (let ([a b]
-  ;           [b a])
-  ;       (+ a b)))
-  ;  '(let* ([a 3] [b (* 2 a)]) (cons a b))
-  ;  '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))
-  ;  '(letrec ([fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))]) (fact 5))
+   '(let ([a '2]
+          [b '3])
+      (let ([a b]
+            [b a])
+        (+ a b)))
 
-  ;  ;'(pushPrompt (newPrompt) (+ 3 4))
+   '(let* ([a 3] [b (* 2 a)]) (cons a b))
+   '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))
+   '(letrec ([fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))]) (fact 5))
 
-  ;  '(apply + (list 1 3 4))
-  ;  '(apply (lambda (a b c) b) (list 1 2 3))
-  ;  '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
+   ;'(pushPrompt (newPrompt) (+ 3 4))
 
-  ;  '(append1 (list 1 2) (list 3 4))
-  ;  '(map1 (lambda (x) (+ 1 x)) (list 1 2))
-  ;  '(reverse (list 1 2 3))
-  ;  '(filter even? (list 1 2 3 4))
+   '(apply + (list 1 3 4))
+   '(apply (lambda (a b c) b) (list 1 2 3))
+   '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
 
-   ; '(append (list 1 2) (list 3 4) (list 5 7))
-    '(foldl + 0 (list 1 2 3))
-    ; '(foldr + 0 (list 1 2 3))
-   ; '(map + (list 1 2) (list 2 3))
-   ; '(ormap eq? (list 1 2) (list 1 2))
-   ; '(andmap + (list 1 2 3) (list 4 5 6))
+   '(append1 (list 1 2) (list 3 4))
+   '(map1 (lambda (x) (+ 1 x)) (list 1 2))
+   '(reverse (list 1 2 3))
+   '(filter even? (list 1 2 3 4))
 
-
+   '(append (list 1 2) (list 3 4) (list 5 7))
+   '(foldl + 0 (list 1 2 3))
+   '(foldr + 0 (list 1 2 3))
+   '(map + (list 1 2) (list 1 2) (list 1 2))
+   '(ormap eq? (list 1 2) (list 1 2))
+   '(andmap + (list 1 2 3) (list 4 5 6))
 
    ))
-
-; (define test-1 (cps-convert (anf-convert (desugar '(+ 2 1)))))
-; (define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 1 5))))))
-; (define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(null? (list 1 4)))))))
-; (define test-1 (anf-convert (desugar (add-prims-to-prog '(null? (list 1 4))))))
-; (define test-1 (anf-convert (desugar (add-prims-to-prog '(+ 2 3 5)))))
-; (define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
-; (define test-1 (anf-convert (desugar (add-prims-to-prog '(+ 2 (+ 3 2))))))
-; (define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 1))))))
-; (define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(apply (λ (a b c) b) (list 1 (list 5 6) 4)))))))
-; (pretty-print test-1)
-; (cekm-interp test-1)
-
-
-;(cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
-
 
 
 (define (compile e)
@@ -167,7 +150,6 @@
 
 
 ;;;;;;; Run cases
-
 (for-each
  (λ (prog)
    ;  (define prog+ (compile prog))
@@ -176,7 +158,7 @@
                ;  "\noutput      : " (cekm-interp prog)
                ;  "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
                ;  "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
-              ;  "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
+               "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
                "\nafter-cps   : " (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog prog)))))
                "\n")))
  test-cases2)

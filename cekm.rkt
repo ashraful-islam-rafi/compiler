@@ -26,17 +26,26 @@
       [(or (== 'lambda) (== 'λ)) #t]
       [else #f]))
 
+  (define (ae-eval exp env)
+    (match exp
+      [`(,(? λ-or-lambda?) ,args ,body)
+       `(clo ,exp ,env)]
+      [(? symbol? x)
+       (hash-ref env x
+                 (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))]
+      [(or (? number?) (? boolean?) (? string?)) exp]
+      ))
+
   (define (eval exp env kont m-kont)
-    (displayln (~a "\n>>>eval :exp:"))
-    (pretty-print exp)
+    ; (displayln (~a "\n>>>eval :exp:"))
+    ; (pretty-print exp)
 
     ;(displayln (~a "\n>>>eval : env:"))
     ;(pretty-print env)
     ;(displayln (~a "\n>>>eval : " exp )) ;" env: " env))
     (match exp
-      [(or (? number?) (? boolean?) (? string?)
-           (? null?))
-       (ret exp kont m-kont)]
+      [(or (? number?) (? boolean?) (? string?))
+       (ret (ae-eval exp env) kont m-kont)]
 
       #;[`(quote ,datum)
          (ret `(quote ,datum) kont m-kont)]
@@ -59,7 +68,7 @@
             (raise `(error ,(format "Unknown quote format: ~a" temp_datum)))]))]
 
       [`(,(? λ-or-lambda?) ,args ,body)
-       (ret `(clo ,exp ,env) kont m-kont)]
+       (ret (ae-eval exp env) kont m-kont)]
 
       [`(if ,grd, texp, fexp)
        (eval grd env `(ifk ,texp ,fexp ,env ,kont) m-kont)]
@@ -140,11 +149,13 @@
        ;(hash-ref env x)
        (car (hash-ref env x))]
 
-      [`(prim ,op ,(? symbol? xs) ...)
+      [`(prim ,op ,aes ...)
        ;  (displayln (~a "op: " op "\nxs: " xs ))
+
        (ret (racket-apply
              (racket-eval op (make-base-namespace))
-             (map (λ (x) (hash-ref env x)) xs)) kont m-kont)]
+             (map (λ (ae) (ae-eval ae env)) aes))
+            kont m-kont)]
 
       [`(apply-prim ,opr ,x)
        ;  (when (or (equal? 'car opr) (equal? 'cdr opr) (equal? '+ opr))
@@ -157,9 +168,10 @@
        (eval ef env `(app-k () ,ea-list ,env ,kont) m-kont)]
 
       [(? symbol? x)
-       (ret (hash-ref env x
-                      (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
-            kont m-kont)]
+       (ret (ae-eval x env) kont m-kont)
+       #;(ret (hash-ref env x
+                        (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
+              kont m-kont)]
 
       [else (raise `(Error occured in eval function!...State: ,exp ,env ,kont ,m-kont))]))
 

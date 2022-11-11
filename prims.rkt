@@ -3,7 +3,8 @@
 (provide default-prims prims? builtins Ycomb)
 
 ; (define default-prims '(+ * = < > car cdr list null? cons length equal? eq? cdar even?))
-(define default-prims '(* + - / expt = > < car cdr cdar cons list equal? null? odd? even? positive? negative? length eq?))
+(define default-prims '(* + - / expt = > < car cdr cdar cons list length
+                          equal? eq? null? odd? even? positive? negative?))
 ; (define default-prims '(* +)); - / expt = car cdr cons list equal? null? odd? even? positive? negative?))
 
 
@@ -31,13 +32,13 @@
            '()
            (cons (op (car lst))
                  (map1 op (cdr lst))))))
-    ; (map
-    ;  (λ (op lst1 . list-of-lists)
-    ;    (let ([combined_lst (cons lst1 list-of-lists)])
-    ;      (if (null? (car combined_lst))
-    ;          '()
-    ;          (cons (apply op (map1 car combined_lst))
-    ;                (apply map op (map1 cdr combined_lst)))))))
+    (map
+     (λ (op lst1 . list-of-lists)
+       (let ([combined_lst (cons lst1 list-of-lists)])
+         (if (null? (car combined_lst))
+             '()
+             (cons (apply op (map1 car combined_lst))
+                   (apply map (cons op (map1 cdr combined_lst))))))))
 
     (ormap
      (λ (op . lst)
@@ -55,21 +56,21 @@
                [else
                 (loop (map1 cdr lst))]))))
 
-    ; (andmap
-    ;  (λ (op . lst)
-    ;    (let loop ([lst lst])
-    ;      (cond [(or (null? lst)
-    ;                 (null? (car lst)))
-    ;             #t]
+    (andmap
+     (λ (op . lst)
+       (let loop ([lst lst])
+         (cond [(or (null? lst)
+                    (null? (car lst)))
+                #t]
 
-    ;            [(= 0 (length (cdar lst)))
-    ;             (apply op (map1 car lst))]
+               [(= 0 (length (cdar lst)))
+                (apply op (map1 car lst))]
 
-    ;            [(equal? #f (apply op (map1 car lst)))
-    ;             #f]
+               [(equal? #f (apply op (map1 car lst)))
+                #f]
 
-    ;            [else
-    ;             (loop (map1 cdr lst))]))))
+               [else
+                (loop (map1 cdr lst))]))))
 
     (foldr
      (λ (f acc . lsts)
@@ -77,7 +78,7 @@
            acc
            (let* ([xs (map1 car lsts)]
                   [rsts (map1 cdr lsts)]
-                  [acc+ (apply foldr `(,f ,acc ,@rsts))] 
+                  [acc+ (apply foldr `(,f ,acc ,@rsts))]
                   )
              (apply f (append1 xs `(,acc+)))
              ))))
@@ -99,16 +100,16 @@
            (append1 (reverse (cdr lst)) `(,(car lst))))))
 
 
-    ; (append
-    ;  (λ (xs . x)
-    ;    (foldl append1 '() (reverse (append1 `(,xs) x)))))
+    (append
+     (λ (xs . x)
+       (foldl append1 '() (reverse (append1 `(,xs) x)))))
 
-    ; (filter
-    ;  (λ (op lst)
-    ;    (cond [(null? lst) '()]
-    ;          [(op (car lst))
-    ;           (cons (car lst) (filter op (cdr lst)))]
-    ;          [else (filter op (cdr lst))])))
+    (filter
+     (λ (op lst)
+       (cond [(null? lst) '()]
+             [(op (car lst))
+              (cons (car lst) (filter op (cdr lst)))]
+             [else (filter op (cdr lst))])))
 
     ))
 
