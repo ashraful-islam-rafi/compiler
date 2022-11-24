@@ -125,7 +125,7 @@
 
 
 
-    ; for define
+    ; for define/top-level
     #;[`(,(? λ-or-lambda?) ,args . ,body)
        `(λ ,args ,(desugar body))]
 
@@ -169,13 +169,20 @@
           ,(desugar e1)
           ,(desugar `(cond ,@es)))]
 
+    [`(call/cc ,e0) 
+     `(call/cc 
+       ,(desugar 
+         `(λ (k) 
+            (,e0 
+                 (λ (x)  
+                    (k x))))))] 
+
     [`(apply ,e0 ,e1)
      `(apply ,(desugar e0) ,(desugar e1))]
 
 
     [`(quasiquote ,exp)
      (desugar-qq 1 exp)]
-
 
 
     [`(quote . ,datum) exp]
@@ -195,8 +202,9 @@
 ;(desugar '(apply + (let* ([a 3] [b (* 2 a)]) (list a b))))
 ;(desugar '(+ 2 4))
 ;(desugar '(let* ([a 3] [b (* 2 a)]) (cons a b)))
-#;(desugar '(let ([a '2]
-                  [b '3])
-              (let ([a b]
-                    [b a])
-                (+ a b))))
+; (desugar '(let ([a '2]
+;                   [b '3])
+;               (let ([a b]
+;                     [b a])
+;                 (+ a b))))
+;(desugar '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))

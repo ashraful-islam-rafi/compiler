@@ -134,7 +134,14 @@
    '(map1 (lambda (x) (+ 1 x)) (list 1 2))
    '(reverse (list 1 2 3))
    '(filter even? (list 1 2 3 4))
-
+   '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t)
+   '(call/cc
+                 (λ (top)
+                   (let ((cc (call/cc (λ (cc) (cc cc)))))
+                     (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
+                         #t
+                         #t))))
+                         
    '(append (list 1 2) (list 3 4) (list 5 7))
    '(foldl + 0 (list 1 2 3))
    '(foldr + 0 (list 1 2 3))

@@ -144,6 +144,8 @@
       ;(apply map op (map1 cdr combined_lst))?
       ;(prim cons (lambda ....))?
 
+      [`(call/cc ,e0)
+         	(eval e0 env `(callcc-k ,kont) m-kont)]
 
       [`(apply-prim halt ,x)
        ;(hash-ref env x)
@@ -217,6 +219,9 @@
        (eval eb env 'mt (append (second val) (cons kont m-kont)))]
 
 
+      [`(callcc-k ,this_kont)
+         	(apply val `((kont ,this_kont)) this_kont m-kont)]
+
       [`(apply-ark ,ea ,env ,kont)
        (eval ea env `(apply-fnk ,val ,kont) m-kont)]
 
@@ -256,7 +261,7 @@
 
       [`(kont ,this_kont)
        	   (if (= 1 (length va-list))
-               		   (ret (first va-list) this_kont)
+               		   (ret (first va-list) this_kont m-kont)
                            		   (raise `(Error occured applying continuation on ,(length va-list) arguments)))]
 
       [else (raise `(Error occured in apply function!...State: ,vf ,va-list ,kont ,m-kont))]))
@@ -266,10 +271,23 @@
 ; test interpreter
 ;(cekm-interp '(+ 420 2))
 ; (cekm-interp '())
-
 ;(cekm-interp '((lambda (x) x) (lambda (y) y)))
+; (cekm-interp  '(call/cc
+;                  (λ (top)
+;                    (let ((cc (call/cc (λ (cc) (cc cc)))))
+;                      (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
+;                          #t
+;                          #t)))))
 
+
+(define test-1 '(call/cc
+                 (λ (top)
+                   (let ((cc (call/cc (λ (cc) (cc cc)))))
+                     (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
+                         #t
+                         #t)))))
 ;(define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
 ;(define test-1 (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2))))))
-;(cekm-interp test-1)
-; (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog '(foldl + 0 (list 1 2 3)))))))
+; (cekm-interp test-1)
+;(cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog test-1)))))
+;(cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))))))

@@ -50,6 +50,9 @@
       [`(if ,grd ,texp ,fexp)
        `(if ,(M grd) ,(T-c texp c) ,(T-c fexp c))]
 
+      [`(call/cc ,exp)
+       `(,(M exp) ,c ,c)]
+
       [`(apply ,e0 ,e1)
        (define lst (gensym 'lst))
        `(let ([,lst (prim cons ,c ,(M e1))])
@@ -87,6 +90,8 @@
 ;(M '(λ (x) y))
 
 ;(cps-convert '(let ([x ((λ (z) z) 2)]) x))
+
+;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))))) )
 
 ;(cps-convert '(let ((car (λ args (apply-prim car args)))) '(1 2 3)))
 
