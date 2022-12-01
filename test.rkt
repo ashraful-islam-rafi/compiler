@@ -162,9 +162,9 @@
    ;  (define prog+ (compile prog))
    (displayln (~a
                "case        : " prog
-               ;  "\noutput      : " (cekm-interp prog)
-               ;  "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
-               ;  "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
+                ; "\noutput      : " (cekm-interp prog)
+                ; "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
+                ; "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
                "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
                "\nafter-cps   : " (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog prog)))))
                "\n")))

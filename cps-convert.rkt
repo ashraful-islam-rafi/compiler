@@ -40,12 +40,11 @@
 
       ;continuation
       ; [`(let ([,lhs ,rhs]) ,body)
-      ; (displayln (~a "continuation"))
       ;    (T-c rhs `(λ (,lhs) ,(T-c body c)))]
 
       [`(let ([,lhs ,rhs]) ,e0)
-       (define let-cont (gensym 'let-cont))
-       (T-c rhs `(λ (let-cont ,lhs) ,(T-c e0 c)))]
+       (define letk (gensym 'letk))
+       (T-c rhs `(λ (,letk ,lhs) ,(T-c e0 c)))]
 
       [`(if ,grd ,texp ,fexp)
        `(if ,(M grd) ,(T-c texp c) ,(T-c fexp c))]
@@ -89,18 +88,36 @@
 ;; Examples
 ;(M '(λ (x) y))
 
-;(cps-convert '(let ([x ((λ (z) z) 2)]) x))
+; (cps-convert '(let ([x ((λ (z) z) 2)]) x))
 
 ;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))))) )
 
 ;(cps-convert '(let ((car (λ args (apply-prim car args)))) '(1 2 3)))
 
 ;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(null? (list 1 3)))))))
-;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
+; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
 ;(pretty-print (anf-convert (desugar (add-prims-to-prog '(+ 2 3 5)))))
-;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 3 5))))))
+; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 3))))))
 ;(pretty-print (cps-convert (anf-convert (desugar '(+ 2 1)))))
 ;(cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2))))))
 ;(cps-convert (anf-convert (desugar (add-prims-to-prog '(apply (λ (a b c) b) (list 1 (list 5 6) 4))))))
 ; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(map + (list 1 2)))))))
 ;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(map1 (lambda (x) (+ 1 x)) (list 1 2)))))))
+; (pretty-print (cps-convert '(let ((cons (λ args (apply-prim cons args))))
+;                   (let ((null? (λ args (apply-prim null? args))))
+;                     (let ((list (λ args (apply-prim list args))))
+;                       (let ((cdr (λ args (apply-prim cdr args))))
+;                         (let ((car (λ args (apply-prim car args))))
+;                           (let ((* (λ args (apply-prim * args))))
+;                             (let ((+ (λ args (apply-prim + args))))
+;                               (let ((Ycomb
+;                                      ((λ (x) (x x))
+;                                       (λ (g)
+;                                         (λ (f)
+;                                           (f
+;                                            (λ vs
+;                                              (let ((t6370 (g g)))
+;                                                (let ((t6371 (t6370 f)))
+;                                                  (apply t6371 vs))))))))))
+   
+;                                 (+ 2 3 5)))))))))))

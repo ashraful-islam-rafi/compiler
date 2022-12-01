@@ -148,8 +148,9 @@
          	(eval e0 env `(callcc-k ,kont) m-kont)]
 
       [`(apply-prim halt ,x)
-       ;(hash-ref env x)
-       (car (hash-ref env x))]
+      ;  (hash-ref env x)
+       (car (hash-ref env x))
+       ]
 
       [`(prim ,op ,aes ...)
        ;  (displayln (~a "op: " op "\nxs: " xs ))
