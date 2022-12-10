@@ -25,8 +25,7 @@
     [`(lambda* ,params ,body)
      (set-subtract (free body) (apply set params))]
 
-    [(? symbol?)
-     (set exp)]
+    [(? symbol?) (set exp)]
 
     [`(make-closure ,proc, env)
      (set-union (free proc) (free env))]
@@ -34,8 +33,7 @@
     [`(make-env (,vs ,es) ...)
      (apply set-union (map free es))]
 
-    [`(env-ref ,env ,v)
-     (free env)]
+    [`(env-ref ,env ,v) (free env)]
 
     [`(apply-closure ,f ,args ...)
      (apply set-union (map free `(,f . ,args)))]
@@ -44,9 +42,9 @@
      (apply set-union (map free `(,f . ,args)))]))
 
 
-(check-expect (free '(make-closure (lambda (env x) ((env-ref env f) x))
-                                   (make-env (f f))))
-              (set 'f))
+; (check-expect (free '(make-closure (lambda (env x) ((env-ref env f) x))
+;                                    (make-env (f f))))
+;               (set 'f))
 
 
 ; substitute : hash[var,exp] exp => exp
@@ -92,12 +90,12 @@
     (substitute sub exp)))
 
 
-(check-expect
- (substitute (make-hash '((f . +) (x . 4)))
-             '(make-closure (lambda (env x) ((env-ref env f) x))
-                            (make-env (f f))))
- '(make-closure (lambda (env x) ((env-ref env f) x))
-                (make-env (f +))))
+; (check-expect
+;  (substitute (make-hash '((f . +) (x . 4)))
+;              '(make-closure (lambda (env x) ((env-ref env f) x))
+;                             (make-env (f f))))
+;  '(make-closure (lambda (env x) ((env-ref env f) x))
+;                 (make-env (f +))))
 
 
 
@@ -116,32 +114,18 @@
      `(make-closure (lambda* ,params* ,body*)
                     (make-env ,@env))]
 
-    [`(lambda* ,params ,body)
-     exp]
-
-    [(? symbol?)
-     exp]
-
-    [`(make-closure ,lam ,env)
-     exp]
-
-    [`(make-env (,vs ,es) ...)
-     exp]
-
-    [`(env-ref ,env ,v)
-     exp]
-
-    [`(apply-closure ,f ,args ...)
-     exp]
+    [`(lambda* ,params ,body) exp]
+    [(? symbol?) exp]
+    [`(make-closure ,lam ,env)  exp]
+    [`(make-env (,vs ,es) ...)  exp]
+    [`(env-ref ,env ,v) exp]
+    [`(apply-closure ,f ,args ...)  exp]
 
     [`(,f ,args ...)
      `(apply-closure ,f . ,args)]))
 
 
-
-
-(pretty-write
- (closure-convert '(lambda (x) (+ x a b))))
+; (pretty-write (closure-convert '(lambda (x) (+ x a b d))))
 
 
 ; transform/bottom-up : applies a bottom-up tree transform
@@ -188,8 +172,7 @@
     [`(lambda* ,params ,body)
      `(lambda* ,params ,(t body))]
 
-    [(? symbol?)
-     exp]
+    [(? symbol?) exp]
 
     [`(make-closure ,lam ,env)
      `(make-closure ,(t lam) ,(t env))]
@@ -222,14 +205,6 @@
 
 
 ; (pretty-write (shared-closure-convert example))
-
 (pretty-write (flat-closure-convert example))
-; (pretty-write (flat-closure-convert '(+
-;                                       (apply (lambda (x y) (- y x)) '(4 10))
-;                                       ((apply (lambda (u)
-;                                                 (lambda (v w)
-;                                                   (* u (+ v w))))
-;                                               '(4))
-;                                        '5 '6))))
 
 (test)
