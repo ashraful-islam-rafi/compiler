@@ -120,6 +120,20 @@
             [b a])
         (+ a b)))
 
+   '(let ([a 6])
+      (let ([d 2])
+        (let ([e 3])
+          (let ([c (λ (x) (+ x a d))])
+            (let ([f (λ (b) (+ e d a b))])
+              (f a))))))
+
+    '(let ([a '6])
+      (let ([d '2])
+        (let ([e '3])
+          (let ([c (λ (x) (+ x a d))])
+            (let ([f (λ (b) (+ e d a b))])
+              (f a))))))
+
    '(let* ([a 3] [b (* 2 a)]) (cons a b))
    '(let ([x #f] [f (lambda (b) (not b))]) (+ (if (f x) 0 1) 2))
    '(letrec ([fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))]) (fact 5))
@@ -136,12 +150,12 @@
    '(filter even? (list 1 2 3 4))
    '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t)
    '(call/cc
-                 (λ (top)
-                   (let ((cc (call/cc (λ (cc) (cc cc)))))
-                     (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
-                         #t
-                         #t))))
-                         
+     (λ (top)
+       (let ((cc (call/cc (λ (cc) (cc cc)))))
+         (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
+             #t
+             #t))))
+
    '(append (list 1 2) (list 3 4) (list 5 7))
    '(foldl + 0 (list 1 2 3))
    '(foldr + 0 (list 1 2 3))
@@ -162,9 +176,9 @@
    ;  (define prog+ (compile prog))
    (displayln (~a
                "case        : " prog
-                ; "\noutput      : " (cekm-interp prog)
-                ; "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
-                ; "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
+               ; "\noutput      : " (cekm-interp prog)
+               ; "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
+               ; "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
                "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
                "\nafter-cps   : " (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog prog)))))
                "\n")))

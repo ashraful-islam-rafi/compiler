@@ -161,8 +161,8 @@
             kont m-kont)]
 
       [`(apply-prim ,opr ,x)
-       ;  (when (or (equal? 'car opr) (equal? 'cdr opr) (equal? '+ opr))
-       ;    (displayln (~a "env-hash: " (hash-ref env x))))
+        ; (when (or (equal? 'car opr) (equal? 'cdr opr) (equal? '+ opr))
+        ;   (displayln (~a "env-hash: " (hash-ref env x))))
 
        (ret (racket-apply (racket-eval opr (make-base-namespace)) (hash-ref env x)) kont m-kont)]
 

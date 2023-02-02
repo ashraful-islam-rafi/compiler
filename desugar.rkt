@@ -101,7 +101,9 @@
           (cons (cons a lst) x)]
          [(? symbol? x) (cons null x)]
          [_
-          (raise `(error ,(format "invalid parameter list! ~a" improper-args)))]))
+          (raise "invalid parameter list!!!")
+          ;(raise `(error ,(format "invalid parameter list! ~a" improper-args)))
+          ]))
 
      (match-define (cons req opt) (extract-params improper-args))
 
@@ -117,11 +119,7 @@
                    [,arg-x (cdr ,arg-x)])
                ,(loop (cdr req)))])))
 
-     `(λ ,arg-x
-        ;(if (< ,(length req) (length `(,arg-x)))
-        (if (< ,(length req) 1)
-            (raise "invalid parameter list!")
-            ,(simplify-lambda arg-x req opt body)))]
+      `(λ ,arg-x ,(simplify-lambda arg-x req opt body))]
 
 
 
@@ -169,13 +167,13 @@
           ,(desugar e1)
           ,(desugar `(cond ,@es)))]
 
-    [`(call/cc ,e0) 
-     `(call/cc 
-       ,(desugar 
-         `(λ (k) 
-            (,e0 
-                 (λ (x)  
-                    (k x))))))] 
+    [`(call/cc ,e0)
+     `(call/cc
+       ,(desugar
+         `(λ (k)
+            (,e0
+             (λ (x)
+               (k x))))))]
 
     [`(apply ,e0 ,e1)
      `(apply ,(desugar e0) ,(desugar e1))]
@@ -207,4 +205,20 @@
 ;               (let ([a b]
 ;                     [b a])
 ;                 (+ a b))))
-;(desugar '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))
+; (desugar '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))
+
+; (pretty-print (desugar '(foldl
+;                          (λ (f acc . lsts)
+;                            (if (ormap null? lsts)
+;                                acc
+;                                (let* ([xs (map car lsts)]
+;                                       [rsts (map cdr lsts)]
+;                                       [acc+ (apply f (append xs `(,acc)))])
+;                                  (apply foldl `(,f ,acc+ ,@rsts))))))))
+
+#;(pretty-print (desugar '(append1
+                           (λ (lhs rhs)
+                             (if (null? lhs)
+                                 rhs
+                                 (cons (car lhs)
+                                       (append1 (cdr lhs) rhs)))))))
