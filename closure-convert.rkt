@@ -10,7 +10,7 @@
 
 
 (define (simplify-λ exp)
-  ; (displayln (~a "exp: " exp))
+  (displayln (~a "exp: " exp))
   (match exp
     [`(let ([,lhs ',datum]) ,elet)
      `(let ([,lhs ',datum]) ,(simplify-λ elet))]
@@ -51,8 +51,7 @@
      `(let ([,lhs ,val]) ,(simplify-λ elet))]
 
     [`(apply ,f ,args)
-     ;`(,f ,@args)
-     'todo
+     `(apply ,f ,args)
      ]
 
     [`(if ,grd ,texp ,fexp)
@@ -64,20 +63,18 @@
 
      (define arg (gensym 'oldarg))
      `(let ([,arg '()])
-          ,(let loop ([es (reverse es)]
-                      [oldarg arg])
+        ,(let loop ([es (reverse es)]
+                    [oldarg arg])
 
-             ;(displayln (~a "lst: " (list 'proc: f 'es: es 'arg: oldarg)))
+           ;(displayln (~a "lst: " (list 'proc: f 'es: es 'arg: oldarg)))
 
-             (cond
-               [(null? es) (list f oldarg)]
-               [(pair? es)
-                (define newarg (gensym 'newarg))
-                `(let ([,newarg (prim cons ,(car es) ,oldarg)])
-                   ,(loop (cdr es) newarg))])))
+           (cond
+             [(null? es) `(apply ,f ,oldarg)]
+             [(pair? es)
+              (define newarg (gensym 'newarg))
+              `(let ([,newarg (prim cons ,(car es) ,oldarg)])
+                 ,(loop (cdr es) newarg))])))
      ]))
-
-
 
 
 (define (let-bound-program exp)
@@ -242,26 +239,33 @@
        (list `(if ,grd ,texp-body ,fexp-body)
              final_vars_set
              fexp-procs)]
+      [`(apply ,f ,args)
+       `(app-clo ,f ,args)
+       ]
 
-      [`(,f ,es ...)
-       (define final_vars_set (list->set (cons f es)))
-       (list `(apply-clo ,f ,@es) final_vars_set procs)]
+      #;[`(,f ,es ...)
+         (define final_vars_set (list->set (cons f es)))
+         (list `(app-clo ,f ,@es) final_vars_set procs)]
 
       [_ (error (format "unknown expression '~a" ex))]
       ))
 
 
-  (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ (let-bound-program exp))))
-  ; (match-define (list root_body free_vars procs) (bottomup-convert (let-bound-program exp)))
+  ; (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ (let-bound-program exp))))
+  (define let_bounded_prog (let-bound-program (cps-convert (anf-convert (desugar (add-prims-to-prog exp))))))
+  ; (pretty-print let_bounded_prog)
+
+  (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ let_bounded_prog)))
+
   ; (pretty-print (let-bound-program exp))
-  (pretty-print (simplify-λ (let-bound-program exp)))
+  ; (pretty-print (simplify-λ (let-bound-program exp)))
   ; (when (not (set-empty? free_vars)) (displayln `(root_fv: ,free_vars)))
-  (cons `(proc root ,(gensym 'rootenv) ,(gensym 'rootarg) ,root_body) procs)
+  ;(cons `(proc root ,(gensym 'rootenv) ,(gensym 'rootarg) ,root_body) procs)
+  'todo
   )
 
 
 ;;; tests
-
 (define example
   '(let ([d 2])
      (let ([c (λ (x) (x))])
