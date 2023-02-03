@@ -239,7 +239,16 @@
        (list `(if ,grd ,texp-body ,fexp-body)
              final_vars_set
              fexp-procs)]
-      [`(apply ,f ,args)
+
+      #;[`(apply ,f ,args)
+         ;(define final_vars_set (list->set (cons f args)))
+         (list `(app-clo ,f ,args) (set) procs)]
+         
+      [`(apply ,f ,args ...)
+         (define final_vars_set (list->set (cons f args)))
+         (list `(app-clo ,f ,@args) final_vars_set procs)]
+
+      #;[`(apply ,f ,args)
        `(app-clo ,f ,args)
        ]
 
@@ -260,8 +269,7 @@
   ; (pretty-print (let-bound-program exp))
   ; (pretty-print (simplify-λ (let-bound-program exp)))
   ; (when (not (set-empty? free_vars)) (displayln `(root_fv: ,free_vars)))
-  ;(cons `(proc root ,(gensym 'rootenv) ,(gensym 'rootarg) ,root_body) procs)
-  'todo
+  (cons `(proc root ,(gensym 'rootenv) ,(gensym 'rootarg) ,root_body) procs)
   )
 
 
