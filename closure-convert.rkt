@@ -10,7 +10,7 @@
 
 
 (define (simplify-λ exp)
-  (displayln (~a "exp: " exp))
+  ; (displayln (~a "exp: " exp))
   (match exp
     [`(let ([,lhs ',datum]) ,elet)
      `(let ([,lhs ',datum]) ,(simplify-λ elet))]
@@ -20,7 +20,6 @@
 
     [`(let ([,lhs (apply-prim ,op ,e)]) ,elet)
      `(let ([,lhs (apply-prim ,op ,e)]) ,(simplify-λ elet))]
-
 
     [`(let ([,lhs (,(? λ-or-lambda?) (,args ...) ,elam)]) ,elet)
      ;  (displayln (~a "lamargs: " (list 'lhs: lhs 'args: args 'elam: elam 'elet: elet)))
@@ -46,20 +45,17 @@
     [`(let ([,lhs (,(? λ-or-lambda?) ,arg ,elam)]) ,elet)
      `(let ([,lhs (λ ,arg ,(simplify-λ elam))]) ,(simplify-λ elet))]
 
-
     [`(let ([,lhs ,val]) ,elet)
      `(let ([,lhs ,val]) ,(simplify-λ elet))]
 
     [`(apply ,f ,args)
-     `(apply ,f ,args)
-     ]
+     `(apply ,f ,args)]
 
     [`(if ,grd ,texp ,fexp)
      `(if ,grd ,(simplify-λ texp) ,(simplify-λ fexp))]
 
     [`(,f ,es ...)
      ;  (displayln (~a "app: " (cons f es)))
-     ;(simplify-λ `(apply ,f ,(es))
 
      (define arg (gensym 'oldarg))
      `(let ([,arg '()])
@@ -239,18 +235,10 @@
        (list `(if ,grd ,texp-body ,fexp-body)
              final_vars_set
              fexp-procs)]
-
-      #;[`(apply ,f ,args)
-         ;(define final_vars_set (list->set (cons f args)))
-         (list `(app-clo ,f ,args) (set) procs)]
          
-      [`(apply ,f ,args ...)
-         (define final_vars_set (list->set (cons f args)))
-         (list `(app-clo ,f ,@args) final_vars_set procs)]
-
-      #;[`(apply ,f ,args)
-       `(app-clo ,f ,args)
-       ]
+      [`(apply ,f ,args)
+         (define final_vars_set (list->set (cons f (cons args '()))))
+         (list `(app-clo ,f ,args) final_vars_set procs)]
 
       #;[`(,f ,es ...)
          (define final_vars_set (list->set (cons f es)))
@@ -260,11 +248,11 @@
       ))
 
 
-  ; (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ (let-bound-program exp))))
-  (define let_bounded_prog (let-bound-program (cps-convert (anf-convert (desugar (add-prims-to-prog exp))))))
+  (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ (let-bound-program exp))))
+  ; (define let_bounded_prog (let-bound-program (cps-convert (anf-convert (desugar (add-prims-to-prog exp))))))
   ; (pretty-print let_bounded_prog)
 
-  (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ let_bounded_prog)))
+  ; (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ let_bounded_prog)))
 
   ; (pretty-print (let-bound-program exp))
   ; (pretty-print (simplify-λ (let-bound-program exp)))
@@ -282,29 +270,14 @@
 ; (pretty-print (closure-convert example))
 
 (define example1
-  '(let ((d '2))
-     (let ((c
-            (lambda (arglist29073)
-              (let ((x (prim car arglist29073)))
-                (let ((args29075$+$0 '()))
-                  (let ((args29075$+$1 (prim cons x args29075$+$0)))
-                    (let ((args29075$+$2 (prim cons x args29075$+$1)))
-                      (+ args29075$+$2))))))))
-       (let ((f
-              (lambda (arglist29076)
-                (let ((b (prim car arglist29076)))
-                  (let ((arglist29077 (prim cdr arglist29076)))
-                    (let ((d (prim car arglist29077)))
-                      (let ((args29079$+$0 '()))
-                        (let ((args29079$+$1 (prim cons b args29079$+$0)))
-                          (let ((args29079$+$2 (prim cons e args29079$+$1)))
-                            (let ((args29079$+$3 (prim cons d args29079$+$2)))
-                              (+ args29079$+$3)))))))))))
-         (let ((args29080$f$0 '()))
-           (let ((args29080$f$1 (prim cons k args29080$f$0)))
-             (f args29080$f$1)))))))
+  '(let ([a 6])
+     (let ([d '2])
+       (let ([e '3])
+         (let ([c (λ (x) (+ x a d))])
+           (let ([f (λ (a b) (c (+ e d a b)))])
+             (f 4 5)))))))
 
-; (pretty-print (closure-convert example1))
+(pretty-print (closure-convert example1))
 
 (define example2
   '(let ([a '6])
@@ -314,7 +287,7 @@
            (let ([f (λ (a b) (+ e d a b))])
              (f k)))))))
 
-(pretty-print (closure-convert example2))
+; (pretty-print (closure-convert example2))
 
 (define example3
   '(let ((* (λ args
