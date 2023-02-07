@@ -235,10 +235,10 @@
        (list `(if ,grd ,texp-body ,fexp-body)
              final_vars_set
              fexp-procs)]
-         
+
       [`(apply ,f ,args)
-         (define final_vars_set (list->set (cons f (cons args '()))))
-         (list `(app-clo ,f ,args) final_vars_set procs)]
+       (define final_vars_set (list->set (cons f (cons args '()))))
+       (list `(app-clo ,f ,args) final_vars_set procs)]
 
       #;[`(,f ,es ...)
          (define final_vars_set (list->set (cons f es)))
@@ -247,8 +247,14 @@
       [_ (error (format "unknown expression '~a" ex))]
       ))
 
+  (define let_bounded_prog (let-bound-program exp))
+  (define lam_simplified_prog (simplify-λ let_bounded_prog))
+  (pretty-print let_bounded_prog)
+  (pretty-print lam_simplified_prog)
 
-  (match-define (list root_body free_vars procs) (bottomup-convert (simplify-λ (let-bound-program exp))))
+
+
+  (match-define (list root_body free_vars procs) (bottomup-convert lam_simplified_prog))
   ; (define let_bounded_prog (let-bound-program (cps-convert (anf-convert (desugar (add-prims-to-prog exp))))))
   ; (pretty-print let_bounded_prog)
 
@@ -277,7 +283,7 @@
            (let ([f (λ (a b) (c (+ e d a b)))])
              (f 4 5)))))))
 
-(pretty-print (closure-convert example1))
+; (pretty-print (closure-convert example1))
 
 (define example2
   '(let ([a '6])
@@ -285,9 +291,9 @@
        (let ([e '3])
          (let ([c (λ (x) (+ x a d))])
            (let ([f (λ (a b) (+ e d a b))])
-             (f k)))))))
+             (f 4 5)))))))
 
-; (pretty-print (closure-convert example2))
+(pretty-print (closure-convert example2))
 
 (define example3
   '(let ((* (λ args
