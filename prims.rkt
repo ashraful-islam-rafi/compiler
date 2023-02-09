@@ -7,8 +7,8 @@
 (define default-prims '(+ ));  - / expt = car cdr cons list equal? null? odd? even? positive? negative?))
 
 
-(define builtins
-  `(
+(define builtins '())
+  #;`(
     (Ycomb ((λ (x) (x x))
             (λ (g) (λ (f)
                      (f (λ vs
@@ -110,7 +110,7 @@
               (cons (car lst) (filter op (cdr lst)))]
              [else (filter op (cdr lst))])))
 
-    ))
+    )
 
 (define (prims? op)
   (if (member op default-prims)

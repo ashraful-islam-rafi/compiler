@@ -189,7 +189,7 @@
        (define combined_args (set-union free_let_vars final_env_vars))
        (define final_vars_set (set-remove combined_args lhs))
 
-       (list `(let ([,lhs (new-closure ,code_ptr)]) ,temp_body1)
+       (list `(let ([,lhs (new-closure ,code_ptr ,@sorted_env_vars)]) ,temp_body1)
              final_vars_set
              (cons `(proc ,code_ptr ,env_name ,args ,new-body) temp_procs2))]
 
@@ -249,8 +249,8 @@
 
   (define let_bounded_prog (let-bound-program exp))
   (define lam_simplified_prog (simplify-λ let_bounded_prog))
-  (pretty-print let_bounded_prog)
-  (pretty-print lam_simplified_prog)
+  ; (pretty-print let_bounded_prog)
+  ; (pretty-print lam_simplified_prog)
 
 
 
@@ -293,7 +293,8 @@
            (let ([f (λ (a b) (+ e d a b))])
              (f 4 5)))))))
 
-(pretty-print (closure-convert example2))
+; (pretty-print (closure-convert example2))
+(pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2)))))))
 
 (define example3
   '(let ((* (λ args
