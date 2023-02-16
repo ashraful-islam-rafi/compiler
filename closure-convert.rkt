@@ -2,6 +2,7 @@
 
 (require "cps-convert.rkt" "anf-convert.rkt" "desugar.rkt" "prims.rkt")
 
+(provide closure-convert)
 
 (define (λ-or-lambda? str)
   (match str
@@ -294,7 +295,8 @@
              (f 4 5)))))))
 
 ; (pretty-print (closure-convert example2))
-(pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2)))))))
+; (pretty-print (closure-convert '(+ 1 2)))
+; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2)))))))
 
 (define example3
   '(let ((* (λ args
