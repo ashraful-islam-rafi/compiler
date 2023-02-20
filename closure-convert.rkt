@@ -264,7 +264,7 @@
   ; (pretty-print (let-bound-program exp))
   ; (pretty-print (simplify-λ (let-bound-program exp)))
   ; (when (not (set-empty? free_vars)) (displayln `(root_fv: ,free_vars)))
-  (cons `(proc root ,(gensym 'rootenv) ,(gensym 'rootarg) ,root_body) procs)
+  (cons `(proc main ,(gensym 'mainenv) ,(gensym 'mainarg) ,root_body) procs)
   )
 
 

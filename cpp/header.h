@@ -73,6 +73,12 @@ float decodeFloat(void* data) {
   return decoded;
 }
 
+void* encodeCons(int value) {
+  int64_t encoded = value;
+  encoded = (encoded << 3) | INTEGER;
+  return reinterpret_cast<void*>(new int64_t(encoded));
+}
+
 
 // int main() {
 //   int value = 1001;
