@@ -66,6 +66,7 @@
   (define main_proc (car proc_list))
   (define other_procs (cdr proc_list))
 
+  ; (pretty-display proc_list)
   ;(pretty-display main_proc)
   ;(pretty-display other_procs)
 
@@ -86,13 +87,14 @@
           (convert-proc-body letbody)]
 
          [(? null? )
-          (append-line filename (format "void* ~a = encodeString(~a);" (get-c-string lhs) "null"))
+          (append-line filename (format "void* ~a = encodeNull();" (get-c-string lhs)))
           (convert-proc-body letbody)]
 
          [(or (? string? ) (? symbol?))
           (append-line filename (format "void* ~a = encodeString(~a);" (get-c-string lhs) val))
           (convert-proc-body letbody)]
-         [_ 'todo]
+
+         [_ (raise (format "Unknown datatype! ~a" val))]
          )
 
        ]
@@ -130,7 +132,7 @@
       [`(let ([,lhs (prim ,op ,args ...)]) ,letbody)
        (define line (format "void* ~a = prim_~a(~a);" (get-c-string lhs) op
                             (string-join
-                             (map (λ (item) (format "~a" (get-c-string item))) args)
+                             (map (λ (item) (format "void* ~a" (get-c-string item))) args)
                              ", ")))
 
        (append-line filename line)
@@ -138,7 +140,7 @@
        (convert-proc-body letbody)]
 
       [`(let ([,lhs (apply-prim ,op ,arg)]) ,letbody)
-       (define line (format "void* ~a = apply_prim_~a(~a);" (get-c-string lhs) (get-c-string op) (get-c-string arg)))
+       (define line (format "void* ~a = apply_prim_~a(void* ~a);" (get-c-string lhs) (get-c-string op) (get-c-string arg)))
 
        (append-line filename line)
 
@@ -175,12 +177,12 @@
     (match-define `(proc ,ptr ,env ,arg ,body) proc)
 
     (displayln "--------")
-    (pretty-print proc)
+    ; (pretty-print proc)
     (pretty-print ptr)
     (pretty-print env)
     (pretty-print arg)
     (pretty-print body)
-    (displayln "--------")
+    ; (displayln "--------")
 
     (define func_name (format "void ~a(void* ~a, void* ~a)\n{\n" ptr env arg))
 

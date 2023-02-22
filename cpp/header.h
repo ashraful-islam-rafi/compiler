@@ -9,7 +9,8 @@ enum DataType {
   BOOLEAN = 0x2,
   STRING = 0x3,
   FLOAT = 0x4,
-  CLOSURE = 0x5
+  CLOSURE = 0x5,
+  NULLL = 0x6
 };
 
 void* encodeInt(int value) {
@@ -79,30 +80,36 @@ void* encodeCons(int value) {
   return reinterpret_cast<void*>(new int64_t(encoded));
 }
 
+void* encodeNull() {
+  string *str = new string();
+  int64_t encoded = reinterpret_cast<int64_t>(str);
+  encoded = (encoded << 3) | NULLL;
+  return reinterpret_cast<void*>(new int64_t(encoded));
+}
 
-// int main() {
-//   int value = 1001;
-//   void* encodedInt = encodeInt(value);
-//   int decodedInt = decodeInt(encodedInt);
-//   cout << "Encoded int value: " << encodedInt << endl;
-//   cout << "Decoded int value: " << decodedInt << endl;
+int main() {
+  int value = 1001;
+  void* encodedInt = encodeInt(value);
+  int decodedInt = decodeInt(encodedInt);
+  cout << "Encoded int value: " << encodedInt << endl;
+  cout << "Decoded int value: " << decodedInt << endl;
   
-//   bool bvalue = true;
-//   void* encodedBool = encodeBool(bvalue);
-//   bool decodedBool = decodeBool(encodedBool);
-//   cout << "Encoded boolean value: " << encodedBool << endl;
-//   cout << "Decoded boolean value: " << decodedBool << endl;
+  bool bvalue = true;
+  void* encodedBool = encodeBool(bvalue);
+  bool decodedBool = decodeBool(encodedBool);
+  cout << "Encoded boolean value: " << encodedBool << endl;
+  cout << "Decoded boolean value: " << decodedBool << endl;
   
-//   string svalue = "is this working?";
+  string svalue = "is this working?";
 
-//   void* encodedString = encodeString(svalue);
-//   string decodedString = decodeString(encodedString);
-//   cout << "Encoded string value: " << encodedString << endl;
-//   cout << "Decoded string value: " << decodedString << endl;
+  void* encodedString = encodeString(svalue);
+  string decodedString = decodeString(encodedString);
+  cout << "Encoded string value: " << encodedString << endl;
+  cout << "Decoded string value: " << decodedString << endl;
 
-//   float fvalue = 42.203;
-//   void* encodedFloat = encodeFloat(fvalue);
-//   float decodedFloat = decodeFloat(encodedFloat);
-//   cout << "Encoded float value: " << encodedFloat << endl;
-//   cout << "Decoded float value: " << decodedFloat << endl;
-// }
+  float fvalue = 42.203;
+  void* encodedFloat = encodeFloat(fvalue);
+  float decodedFloat = decodeFloat(encodedFloat);
+  cout << "Encoded float value: " << encodedFloat << endl;
+  cout << "Decoded float value: " << decodedFloat << endl;
+}
