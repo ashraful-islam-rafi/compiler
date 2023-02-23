@@ -4,20 +4,51 @@
 
 using namespace std;
 
+typedef unsigned long long u64;
+typedef signed long long s64;
+typedef unsigned long u32;
+typedef signed long s32;
+
+
+// Macros
+#define NUL 0
+
+
 enum DataType {
   INTEGER = 0x1,
   BOOLEAN = 0x2,
   STRING = 0x3,
   FLOAT = 0x4,
   CLOSURE = 0x5,
-  NULLL = 0x6
+  NULLL = 0x6,
+  CONS = 0x7
 };
+
+void* halt;
+void fhalt(void* env, void* arglist){
+    car = prim_car(arglist)
+    cout << car <<endl;
+    exit(0);
+
+}
 
 void* encodeInt(int value) {
   int64_t encoded = value;
   encoded = (encoded << 3) | INTEGER;
   return reinterpret_cast<void*>(new int64_t(encoded));
 }
+
+// 
+u64 encodeInt(s32 value){
+  u64 res = ((u64) value) << 32;
+  return res | INTEGER;
+}
+
+s32 decodeInt(u64 value){
+  //extracting upper 32 bits and then casting back to s32
+  return (s32)(u32)(value >> 32);
+}
+
 
 int decodeInt(void* data) {
   int64_t encoded = *reinterpret_cast<int64_t*>(data);
@@ -80,14 +111,19 @@ void* encodeCons(int value) {
   return reinterpret_cast<void*>(new int64_t(encoded));
 }
 
-void* encodeNull() {
-  string *str = new string();
-  int64_t encoded = reinterpret_cast<int64_t>(str);
-  encoded = (encoded << 3) | NULLL;
-  return reinterpret_cast<void*>(new int64_t(encoded));
+void* decodeCons(){
+
 }
 
-int main() {
+void* encodeNull() {
+  return 0;
+}
+
+void* prim_car(void* obj){
+
+}
+
+/* int main() {
   int value = 1001;
   void* encodedInt = encodeInt(value);
   int decodedInt = decodeInt(encodedInt);
@@ -112,4 +148,4 @@ int main() {
   float decodedFloat = decodeFloat(encodedFloat);
   cout << "Encoded float value: " << encodedFloat << endl;
   cout << "Decoded float value: " << decodedFloat << endl;
-}
+} */

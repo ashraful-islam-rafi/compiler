@@ -63,10 +63,7 @@
   (append-line filename (string-append "#include " "\"header.h\""))
   (append-line filename "using namespace std;\n" )
 
-  (define main_proc (car proc_list))
-  (define other_procs (cdr proc_list))
-
-  ; (pretty-display proc_list)
+  (pretty-display proc_list)
   ;(pretty-display main_proc)
   ;(pretty-display other_procs)
 
@@ -132,7 +129,7 @@
       [`(let ([,lhs (prim ,op ,args ...)]) ,letbody)
        (define line (format "void* ~a = prim_~a(~a);" (get-c-string lhs) op
                             (string-join
-                             (map (λ (item) (format "void* ~a" (get-c-string item))) args)
+                             (map (λ (item) (format "~a" (get-c-string item))) args)
                              ", ")))
 
        (append-line filename line)
@@ -140,14 +137,14 @@
        (convert-proc-body letbody)]
 
       [`(let ([,lhs (apply-prim ,op ,arg)]) ,letbody)
-       (define line (format "void* ~a = apply_prim_~a(void* ~a);" (get-c-string lhs) (get-c-string op) (get-c-string arg)))
+       (define line (format "void* ~a = apply_prim_~a(~a);" (get-c-string lhs) (get-c-string op) (get-c-string arg)))
 
        (append-line filename line)
 
        (convert-proc-body letbody)]
 
       [`(let ([,lhs (env-lookup ,env ,idx)]) ,letbody)
-       (define line (format "void* ~a = ~a[~a];" (get-c-string lhs) env idx))
+       (define line (format "void* ~a = ((void**)~a)[~a];" (get-c-string lhs) env idx))
        (append-line filename line)
 
        (convert-proc-body letbody)]
@@ -165,37 +162,46 @@
 
       [`(app-clo ,func ,args)
        (append-line filename "\nvoid (*fun_ptr) (void*,void*);")
-       (append-line filename (format "fun_ptr = ~a[~a];" (get-c-string func) 0))
+       (append-line filename (format "fun_ptr = ((void**)~a)[~a];" (get-c-string func) 0))
        (append-line filename (format "fun_ptr(~a, ~a);" (get-c-string func) args))
 
        ]
 
       ))
 
-
   (define (convert-procs proc)
     (match-define `(proc ,ptr ,env ,arg ,body) proc)
 
-    (displayln "--------")
-    ; (pretty-print proc)
-    (pretty-print ptr)
-    (pretty-print env)
-    (pretty-print arg)
-    (pretty-print body)
     ; (displayln "--------")
+    ; ; (pretty-print proc)
+    ; (pretty-print ptr)
+    ; (pretty-print env)
+    ; (pretty-print arg)
+    ; (pretty-print body)
+    ; ; (displayln "--------")
 
     (define func_name (format "void ~a(void* ~a, void* ~a)\n{\n" ptr env arg))
 
+    ; start of function definitions
     (append-line filename func_name)
     (convert-proc-body body)
 
     (append-line filename "\n}\n")
+    ;end of function definitions.
     )
+  (map convert-procs proc_list)
+
+  ; write main function.
+  (append-line filename "int main(int argc, char* argv[])\n{\n")
+
+  (append-line filename "halt = (void**)malloc(sizeof(void*) * 1);");
+  (append-line filename "halt[0] = &fhalt;");
+  (append-line filename "root(0,0);\n");
+
+  (append-line filename (format "return 0;\n}"))
+  ;end of main function.
 
 
-  
-  (map convert-procs other_procs)
-  (convert-procs main_proc)
   'cpp-emission-done!)
 
 
@@ -257,3 +263,12 @@
 
 ; (emit-cpp example)
 (emit-cpp clo_converted_prog)
+;void* e = ((void**)env3826)[3];
+
+#| int main()
+{
+    halt = (void**)malloc(sizeof(void*) * 1);
+    halt[0] = &fhalt;
+
+    root(0,0);
+} |#
