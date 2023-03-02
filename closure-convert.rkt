@@ -296,7 +296,8 @@
 
 ; (pretty-print (closure-convert example2))
 ; (pretty-print (closure-convert '(+ 1 2)))
-; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2)))))))
+
+(pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2)))))))
 
 (define example3
   '(let ((* (λ args

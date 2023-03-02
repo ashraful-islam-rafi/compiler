@@ -72,11 +72,20 @@
 
       [`(λ ,var ,body)
        (define $k (gensym 'kkont))
+       (define newarg (gensym var))
 
-       `(λ ,var
-          (let ([,$k (prim car ,var)])
-            (let ([,var (prim cdr ,var)])
-              ,(T-c body $k))))]
+      ;to avoid name conflict during cpp emision
+      `(λ ,newarg
+          (let ([,$k (prim car ,newarg)])
+            (let ([,var (prim cdr ,newarg)])
+              ,(T-c body $k))))
+
+      ;  `(λ ,var
+      ;     (let ([,$k (prim car ,var)])
+      ;       (let ([,var (prim cdr ,var)])
+      ;         ,(T-c body $k))))
+              
+              ]
 
       ;handle other atomic values
       [(or (? symbol?) (? number?) (? boolean?) (? string?)) expr]

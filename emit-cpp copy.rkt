@@ -63,7 +63,7 @@
   (append-line filename (string-append "#include " "\"header.h\""))
   (append-line filename "using namespace std;\n" )
 
-  ; (pretty-display proc_list)
+  (pretty-display proc_list)
   ;(pretty-display main_proc)
   ;(pretty-display other_procs)
 
@@ -76,7 +76,7 @@
 
        (match val
          [(? number? )
-          (append-line filename (format "void* ~a = reinterpret_cast<void *>(ENCODE_INT((s32)~a));" (get-c-string lhs) val))
+          (append-line filename (format "void* ~a = encodeInt(~a);" (get-c-string lhs) val))
           (convert-proc-body letbody)]
 
          [(? boolean? )
@@ -84,7 +84,7 @@
           (convert-proc-body letbody)]
 
          [(? null? )
-          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encodeNull());" (get-c-string lhs)))
+          (append-line filename (format "void* ~a = encodeNull();" (get-c-string lhs)))
           (convert-proc-body letbody)]
 
          [(or (? string? ) (? symbol?))
@@ -97,17 +97,15 @@
        ]
 
       [`(let ([,lhs (new-closure ,ptr ,args ...)]) ,letbody)
-       (define arglength (length args) )
+       (define arglength (+ (length args) 1))
 
        ; new-closure
-       (define ptrName (gensym 'ptr))
-
-       (define line (format "auto ~a = reinterpret_cast<void (*)(void *, void *)>(&~a);" ptrName ptr))
+       (define line (format "void** ~a = (void**)malloc(sizeof(void*) * ~a);" (get-c-string lhs) arglength))
        (append-line filename line)
 
        (append-line
         filename
-        (format "void* ~a = make_closure(~a, reinterpret_cast<u64 *>(~a));" (get-c-string lhs) arglength ptrName))
+        (format "~a[~a] = (void*)(&~a);" (get-c-string lhs) 0 ptr))
 
        #;(foldl (λ (i item res)
                   (append-line
@@ -118,13 +116,12 @@
                 (range 1 arglength)
                 args)
 
-       ;; make a call to build envlist here
-       #;(for/list ([i (in-range 1 arglength)]
-                    [item args])
+       (for/list ([i (in-range 1 arglength)]
+                  [item args])
 
-           (append-line
-            filename
-            (format "~a[~a] = (void*)~a;" (get-c-string lhs) i (get-c-string item))))
+         (append-line
+          filename
+          (format "~a[~a] = (void*)~a;" (get-c-string lhs) i (get-c-string item))))
 
        (append-line filename "\n")
        (convert-proc-body letbody)]
@@ -155,15 +152,18 @@
       [`(let ([,lhs ,val]) ,letbody)
 
        ; variable assingment
-       (append-line filename (format "void* ~a = reinterpret_cast<void *>(ENCODE_INT((s32)~a));" (get-c-string lhs) val))
+       (define line (format "void* ~a = encodeInt(~a);" (get-c-string lhs) val))
+       (append-line filename line)
+
        (convert-proc-body letbody)]
 
-
+      [`(if ,grd ,texp ,fexp)
+       'todo]
 
       [`(app-clo ,func ,args)
-       (define procPtr (gensym 'cloPtr))
-       (append-line filename (format "\nvoid* ~a = (void*)get_closure_ptr(~a);" procPtr (get-c-string func)))
-       (append-line filename (format "reinterpret_cast<void (*)(void *, void *)>(~a)(~a, ~a);" procPtr (get-c-string func) args))
+       (append-line filename "\nvoid (*fun_ptr) (void*,void*);")
+       (append-line filename (format "fun_ptr = ((void**)~a)[~a];" (get-c-string func) 0))
+       (append-line filename (format "fun_ptr(~a, ~a);" (get-c-string func) args))
 
        ]
 
@@ -189,16 +189,16 @@
     (append-line filename "\n}\n")
     ;end of function definitions.
     )
-  (map convert-procs (reverse proc_list))
+  (map convert-procs proc_list)
 
   ; write main function.
-  (append-line filename "int main(int argc, char **argv)\n{\n")
+  (append-line filename "int main(int argc, char* argv[])\n{\n")
 
   (append-line filename "halt = (void**)malloc(sizeof(void*) * 1);");
-  (append-line filename "halt[0] = (void *)&fhalt;");
+  (append-line filename "halt[0] = &fhalt;");
   (append-line filename "root(0,0);\n");
 
-  (append-line filename "}\n")
+  (append-line filename (format "return 0;\n}"))
   ;end of main function.
 
 
@@ -213,7 +213,7 @@
 
 (define example
   '((proc
-     root
+     main
      mainenv3827
      mainarg3828
      (let ((a '6))
@@ -263,7 +263,6 @@
 
 ; (emit-cpp example)
 (emit-cpp clo_converted_prog)
-
 ;void* e = ((void**)env3826)[3];
 
 #| int main()
@@ -273,3 +272,5 @@
 
     root(0,0);
 } |#
+
+;; fix bug: name shadowing not allowed in cpp
