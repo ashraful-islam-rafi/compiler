@@ -228,14 +228,15 @@ extern "C"
       return (u64 *)cc[0];
    }
 
-   void **halt; // = (void **)malloc(sizeof(void *) * 1);
+   void *halt; // = (void **)malloc(sizeof(void *) * 1);
 
-   void fhalt(void *arglist)
+   void fhalt(void* env, void *arglist)
    {
-      cout << "\nin fhalt" << endl;
-      recursive_prim_print(reinterpret_cast<u64>(arglist));
-      cout << endl;
-      cout << prim_car(arglist) << endl;
+      // cout << "\nin fhalt" << endl;
+      // recursive_prim_print(reinterpret_cast<u64>(arglist));
+      cout<< "Final return value: " << endl;
+      recursive_prim_print(reinterpret_cast<u64>(prim_car(prim_cdr(arglist))));
+      cout<<endl;
       exit(0);
    }
 
