@@ -1,5 +1,5 @@
 compiled
-.idea
-.vscode
+.idea/
+.vscode/
 **/*.rkt~
 **/*.bak
