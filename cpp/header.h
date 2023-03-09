@@ -4,6 +4,11 @@
 
 using namespace std;
 
+// Some helpful Macros
+#define NULL_VALUE 0
+#define ENV 9
+#define ENV_ARRAY 8
+
 extern "C"
 {
    typedef unsigned long long u64;
@@ -21,21 +26,51 @@ extern "C"
       CONS = 0x7
    };
 
-// Macros
-#define NULL_VALUE 0
-#define ENV 9
-#define ENV_ARRAY 8
+   s32 decode_int(u64 v)
+   {
+      return (s32)(v >> 32);
+   }
 
-#define DECODE_INT(v) ((s32)((v) >> 32))
-#define ENCODE_INT(v) (((u64)(v) << 32) | INT)
-#define DECODE_CONS(v) ((u64 *)((v) & ~CONS))
-#define ENCODE_CONS(v) (((u64)(v)) | CONS)
-#define DECODE_CLO(v) ((u64 *)((v) & ~CLO))
-#define ENCODE_CLO(v) (((u64)(v)) | CLO)
+   u64 encode_int(s32 v)
+   {
+      return ((u64)v << 32) | INT;
+   }
 
-#define DECODE_ENV_ARR(v) ((u64 *)((v) & ~ENV_ARRAY))
-#define ENCODE_ENV_ARR(v) (((u64)(v)) | ENV_ARRAY)
+   u64 *decode_cons(u64 v)
+   {
+      return (u64 *)(v & ~CONS);
+   }
 
+   u64 encode_cons(u64 *v)
+   {
+      return (((u64)(v)) | CONS);
+   }
+
+   u64 *decode_clo(u64 v)
+   {
+      return (u64 *)(v & ~CLO);
+   }
+
+   u64 encode_clo(u64 *v)
+   {
+      return (((u64)(v)) | CLO);
+   }
+
+   u64 *decode_env_arr(u64 v)
+   {
+      return (u64 *)(v & ~ENV_ARRAY);
+   }
+
+   u64 encode_env_arr(u64 *v)
+   {
+      return (((u64)(v)) | ENV_ARRAY);
+   }
+
+   /**
+    * This function recursively prints a give value
+    * @param v value we are trying to print
+    * @return value type
+    */
    void recursive_prim_print(u64 v)
    {
       switch (v & 7)
@@ -44,14 +79,14 @@ extern "C"
          cout << "()";
          break;
       case INT:
-         cout << DECODE_INT(v);
+         cout << decode_int(v);
          break;
       case CLO:
          cout << "#<procedure>";
          break;
       case CONS:
       {
-         u64 *p = DECODE_CONS(v);
+         u64 *p = decode_cons(v);
          cout << "(";
          recursive_prim_print(p[0]);
          cout << " . ";
@@ -64,14 +99,32 @@ extern "C"
       }
    }
 
-   void *print_halt(void *v) // halt
+   /**
+    *
+    * @param val value we are trying to print
+    * @return void
+    */
+   void print_val(void *val)
+   {
+      u64 value = reinterpret_cast<u64>(val);
+      cout << endl;
+      recursive_prim_print(value);
+      cout << endl;
+   }
+
+   /**
+    * This function prints the value and and halt
+    * @param v value we are trying to print
+    * @return void
+    */
+   void *print_and_halt(void *v)
    {
       u64 val = reinterpret_cast<u64>(v);
       switch (val & 7)
       {
       case CONS:
       {
-         u64 *p = DECODE_CONS(val);
+         u64 *p = decode_cons(val);
          cout << "'(";
          recursive_prim_print(p[0]);
          cout << " . ";
@@ -90,13 +143,20 @@ extern "C"
       }
    }
 
-   // start new
-
-   u64 encodeNull()
+   /**
+    * @return NULL_VALUE that is 0
+    */
+   void *encode_null()
    {
       return NULL_VALUE;
    }
 
+   /**
+    * This function creates a cons cell
+    * @param arg1 represents the car value
+    * @param arg2 represents the cdr value
+    * @return the encoded cons cell.
+    */
    void *prim_cons(void *arg1, void *arg2)
    {
       u64 car = reinterpret_cast<u64>(arg1);
@@ -106,9 +166,14 @@ extern "C"
       ptr[0] = car;
       ptr[1] = cdr;
 
-      return reinterpret_cast<void *>(ENCODE_CONS(ptr));
+      return reinterpret_cast<void *>(encode_cons(ptr));
    }
 
+   /**
+    *
+    * @param p is the cons cell
+    * @return the car value of a cons cell
+    */
    void *prim_car(void *p)
    {
       u64 ptr = reinterpret_cast<u64>(p);
@@ -119,10 +184,15 @@ extern "C"
          exit(0);
       }
 
-      u64 *pp = DECODE_CONS(ptr);
+      u64 *pp = decode_cons(ptr);
       return reinterpret_cast<void *>(pp[0]);
    }
 
+   /**
+    *
+    * @param p is the cons cell
+    * @return the cdr value of a cons cell
+    */
    void *prim_cdr(void *p)
    {
       u64 ptr = reinterpret_cast<u64>(p);
@@ -133,10 +203,15 @@ extern "C"
          exit(0);
       }
 
-      u64 *pp = DECODE_CONS(ptr);
+      u64 *pp = decode_cons(ptr);
       return reinterpret_cast<void *>(pp[1]);
    }
 
+   /**
+    *
+    * @param p is the cons cell
+    * @return the summation of values in the cons cell
+    */
    void *apply_prim__u43(void *p)
    {
       u64 ptr = reinterpret_cast<u64>(p);
@@ -144,118 +219,210 @@ extern "C"
 
       while ((ptr & 7) == CONS)
       {
-         u64 *pp = DECODE_CONS(ptr);
+         u64 *pp = decode_cons(ptr);
 
-         // cout << "in apply prim > Car: " << DECODE_INT(pp[0]) << endl;
-         // cout << "in apply prim > Cdr: " << DECODE_INT(pp[1]) << endl;
+         // cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
+         // cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
 
-         sum += DECODE_INT(pp[0]);
+         sum += decode_int(pp[0]);
 
          // cout << "sum: " << sum << endl;
          ptr = pp[1];
       }
 
-      return reinterpret_cast<void *>(ENCODE_INT((s32)sum));
+      return reinterpret_cast<void *>(encode_int((s32)sum));
    }
 
-   // build envlist
-   u64 allocate_env_space(u64 envlength, u64 tempval)
+   /**
+    *
+    * @param p is the cons cell
+    * @return the summation of values in the cons cell
+    */
+   void *apply_prim__u45(void *p)
    {
-      const u64 temp_len = DECODE_INT(envlength);
-      // u64 temp_len = static_cast<u64>(DECODE_INT(envlength)) + 1;
+      u64 ptr = reinterpret_cast<u64>(p);
 
-      u64 *env_array = (u64 *)(malloc((temp_len + 1) * sizeof(u64)));
+      u64 *cell = decode_cons(ptr);
+      u64 car = cell[0];
+      u64 cdr = cell[1];
 
-      // to distinguish env array from other data types
-      env_array[0] = (temp_len << 3) | ENV;
+      u64 car_value = decode_int(car);
 
-      for (u64 i = 1; i <= temp_len; ++i)
-      {
-         env_array[i] = tempval;
+      cout<<"car value: "<<car_value<<endl;
+
+      if (cdr == NULL_VALUE){
+         // fix error when (- 5), check builtin implementation
+         u64 res = car_value * -1;
+         cout<<"herer..."<< res <<endl;
+         return reinterpret_cast<void *>(encode_int((s32)res));
       }
 
-      return ENCODE_ENV_ARR(env_array);
+      u64 result = car_value;
+
+      while (cdr != NULL_VALUE)
+      {
+         u64 *pp = decode_cons(cdr);
+
+         cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
+         cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
+
+         result -= decode_int(pp[0]);
+
+         cout << "result: " << result << endl;
+         cdr = pp[1];
+      }
+
+      return reinterpret_cast<void *>(encode_int((s32)result));
    }
 
-   u64 set_env_value(u64 arr, u64 idx, u64 val)
+   /**
+    * This function allocates space the environment
+    * @param envlength space length.
+    * @return the encoded env array.
+    */
+   void *allocate_env_space(u64 envlength)
    {
-      // cout << "position: " << idx << " val: " << val << endl;
+      // const u64 temp_env_len = decode_int(envlength);
+      u64 temp_env_len = decode_int(envlength);
 
-      u64 *env_arr = DECODE_ENV_ARR(arr);
-      u64 idx_val = DECODE_INT(idx) + 1;
+      u64 *env_array = (u64 *)(malloc((temp_env_len + 1) * sizeof(u64)));
 
-      // using a pointer to access the element and set its value
-      u64 *elem_ptr = &env_arr[idx_val];
-      *elem_ptr = val;
+      // to distinguish env array from other data types
+      env_array[0] = (temp_env_len << 3) | ENV;
 
-      return NULL_VALUE;
+      for (u64 i = 1; i <= temp_env_len; i++)
+      {
+         env_array[i] = ((u64)0); // initial assignment with a dummy value: 0
+      }
+
+      return reinterpret_cast<void *>(encode_env_arr(env_array));
    }
 
-   void *get_env_value(void *v, void *idx)
-   {
-      u64 obj = reinterpret_cast<u64>(v);
-      u64 index = reinterpret_cast<u64>(idx);
-
-      // cout<< "tag2: " <<(((u64 *)DECODE_ENV_ARR(obj))[0] & 7) << endl;
-
-      return reinterpret_cast<void *>(((u64 *)DECODE_ENV_ARR(obj))[1 + (DECODE_INT(index))]);
-   }
-
-   void *build_env_list(void *clo_obj, u64 var, u64 position)
-   {
-      u64 *obj = DECODE_CLO(reinterpret_cast<u64>(clo_obj));
-
-      u64 ptr = obj[1];
-
-      return reinterpret_cast<void *>(set_env_value(ptr, DECODE_INT(reinterpret_cast<u64>(position)), reinterpret_cast<u64>(var)));
-   }
-
-   void *make_closure(u64 envCount, u64 *tempptr)
+   /**
+    * This function creates a closure instance (ptr + env)
+    * @param fptr is assigned to index 0
+    * @param env is assigned to index 1
+    * @return the encoded closure object.
+    */
+   void *make_closure(void *fptr, void *env)
    {
       // assgning closure pointer
       u64 *obj = (u64 *)(malloc(2 * sizeof(u64))); // new u64[2];
-      obj[0] = reinterpret_cast<u64>(tempptr);
 
-      obj[1] = reinterpret_cast<u64>(allocate_env_space(ENCODE_INT((s32)envCount), ENCODE_INT((s32)0)));
+      u64 ptr = reinterpret_cast<u64>(fptr);
+      u64 temp_env = reinterpret_cast<u64>(env);
 
-      return reinterpret_cast<void *>(ENCODE_CLO(obj));
+      obj[0] = ptr;
+      obj[1] = temp_env;
+
+      return reinterpret_cast<void *>(encode_clo(obj));
    }
 
-   void *get_closure_ptr(void *c)
+   /**
+    * This function sets up the environment part of a closure instance
+    * @param arr is the environment array
+    * @param idx the index where we will assign the value
+    * @param val the value we will assign
+    * @return null pointer
+    */
+   void *set_env(void *arr, u64 idx, void *val)
    {
-      u64 ptr = reinterpret_cast<u64>(c);
-      u64 *cc = DECODE_CLO(ptr);
-      return (u64 *)cc[0];
+      // cout << "position: " << idx << " val: " << val << endl;
+
+      u64 env_arr = reinterpret_cast<u64>(arr);
+      u64 value = reinterpret_cast<u64>(val);
+
+      u64 idx_val = decode_int(idx) + 1;
+
+      // using a pointer to access the element and set its value
+      u64 *elem_ptr = &(decode_env_arr(env_arr))[idx_val];
+      *elem_ptr = value;
+
+      // return NULL_VALUE;
+      return nullptr; // reinterpret_cast<void *>(NULL_VALUE);
    }
 
-   void *halt; // = (void **)malloc(sizeof(void *) * 1);
-
-   void fhalt(void* env, void *arglist)
+   /**
+    * This function creates a closure instance (ptr + env)
+    * @param env environment of closure instance
+    * @param idx specific index value that we will return
+    * @return the actual value that was assignemnt to the index
+    */
+   void *get_env_value(void *env, u64 idx)
    {
-      // cout << "\nin fhalt" << endl;
-      // recursive_prim_print(reinterpret_cast<u64>(arglist));
-      cout<< "Final return value: " << endl;
-      recursive_prim_print(reinterpret_cast<u64>(prim_car(prim_cdr(arglist))));
-      cout<<endl;
+      u64 env_arr = reinterpret_cast<u64>(env);
+      u64 idx_val = decode_int(idx) + 1;
+
+      // cout<<"ArrLen: "<<sizeof(decode_env_arr(env_arr))/sizeof(decode_env_arr(env_arr)[0]) <<endl;
+
+      // using a pointer to access the element
+      u64 val = decode_env_arr(env_arr)[idx_val];
+
+      return reinterpret_cast<void *>(val);
+   }
+
+   /**
+    *
+    * @param val is the closure pointer
+    * @return the environment of a closure instance
+    */
+   void *get_env(void *val)
+   {
+      u64 temp_val = reinterpret_cast<u64>(val);
+
+      u64 *env = decode_clo(temp_val);
+      return reinterpret_cast<void *>(env[1]);
+
+      // cout<< "tag2: " <<(((u64 *)decode_env_arr(obj))[0] & 7) << endl;
+   }
+
+   /**
+    *
+    * @param val is the closure object
+    * @return the pointer of a closure instance
+    */
+   void *get_closure_ptr(void *val)
+   {
+      u64 obj = reinterpret_cast<u64>(val);
+      u64 *clo_obj = decode_clo(obj);
+
+      return reinterpret_cast<void *>(clo_obj[0]);
+   }
+
+   /**
+    * If this function is called, when have our final result in the arglist
+    * @param arglist final output list
+    * @return prints the (car arglist) and exits out of the program
+    */
+   void *apply_prim_halt(void *arglist)
+   {
+      cout << "Final return value: ";
+      print_val(prim_car(arglist));
+
+      exit(0);
+
+      return reinterpret_cast<void *>(prim_car(arglist));
+   }
+
+   // void *halt;
+
+   /**
+    * This function is no longer needed!
+    * The function should be called as the last function in our program
+    * @param env environment we don't care about
+    * @param arglist final output list
+    * @return prints the (car (cdr arglist)) and exits out of the program
+    */
+   void fhalt(void *env, void *arglist)
+   {
+      cout << "in fhalt";
+      print_val(arglist);
+
+      cout << "Final return value: ";
+      print_val(prim_car(prim_cdr(arglist)));
+
       exit(0);
    }
-
-   // void fhalt(void *env, void *arglist)
-   // {
-   //   cout << prim_car(arglist) << endl;
-   //   exit(0);
-   // }
-
-   // end new
-
-   // u64 halt;
-   // void fhalt(void *env, u64 arglist)
-   // {
-   //   u64 car = prim_car(arglist);
-   //   cout<< car << endl;
-
-   //   exit(0);
-   // }
 
    /* int main() {
      int value = 1001;

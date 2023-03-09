@@ -67,7 +67,7 @@
   ;(pretty-display main_proc)
   ;(pretty-display other_procs)
 
-  (define (convert-proc-body body)
+  (define (convert-proc-body proc_env proc_arg body)
     ;(displayln (~a "cpb: " body))
     (define (get-c-string s) (string->symbol (convert-id-to-c s)))
 
@@ -76,20 +76,20 @@
 
        (match val
          [(? number? )
-          (append-line filename (format "void* ~a = reinterpret_cast<void *>(ENCODE_INT((s32)~a));" (get-c-string lhs) val))
-          (convert-proc-body letbody)]
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((u32)~a));" (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
 
          [(? boolean? )
-          (append-line filename (format "void* ~a = encodeBoolean(~a);" (get-c-string lhs) val))
-          (convert-proc-body letbody)]
+          (append-line filename (format "void* ~a = encode_boolean(~a);" (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
 
          [(? null? )
-          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encodeNull());" (get-c-string lhs)))
-          (convert-proc-body letbody)]
+          (append-line filename (format "void* ~a = encode_null();" (get-c-string lhs)))
+          (convert-proc-body proc_env proc_arg letbody)]
 
          [(or (? string? ) (? symbol?))
-          (append-line filename (format "void* ~a = encodeString(~a);" (get-c-string lhs) val))
-          (convert-proc-body letbody)]
+          (append-line filename (format "void* ~a = encode_string(~a);" (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
 
          [_ (raise (format "Unknown datatype! ~a" val))]
          )
@@ -100,34 +100,42 @@
        (define arglength (length args) )
 
        ; new-closure
+       (append-line filename "\n//creating new closure instance")
+
        (define ptrName (gensym 'ptr))
 
-       (define line (format "auto ~a = reinterpret_cast<void (*)(void *, void *)>(&~a);" ptrName ptr))
-       (append-line filename line)
+       (append-line filename (format "auto ~a = reinterpret_cast<void (*)(void *, void *)>(&~a);" ptrName ptr))
 
        (append-line
         filename
-        (format "void* ~a = make_closure(~a, reinterpret_cast<u64 *>(~a));" (get-c-string lhs) arglength ptrName))
+        (format "~a = allocate_env_space(encode_int((u32)~a));" proc_env arglength))
+
+       (append-line
+        filename
+        (format "void* ~a = make_closure(reinterpret_cast<void *>(~a), ~a);" (get-c-string lhs) ptrName proc_env))
 
        #;(foldl (λ (i item res)
                   (append-line
                    filename
-                   (format "~a[~a] = (void*)~a;" (get-c-string lhs) i (get-c-string item))))
+                   (format "set_env(~a, ~a, ~a);" proc_env i (get-c-string item))))
 
                 '()
-                (range 1 arglength)
+                (range 1 (+ arglength 1))
                 args)
 
-       ;; make a call to build envlist here
-       #;(for/list ([i (in-range 1 arglength)]
-                    [item args])
+       (when (> (+ arglength 1) 1) (append-line filename "\n//setting env list"))
 
-           (append-line
-            filename
-            (format "~a[~a] = (void*)~a;" (get-c-string lhs) i (get-c-string item))))
+       (for/list ([i (in-range 1 (+ arglength 1))]
+                  [item args])
 
+         (append-line
+          filename
+          (format "set_env(~a, encode_int((u32)~a), ~a);" proc_env i (get-c-string item))))
+
+       ;  (when (> (+ arglength 1) 1) (append-line filename "\n"))
        (append-line filename "\n")
-       (convert-proc-body letbody)]
+
+       (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs (prim ,op ,args ...)]) ,letbody)
        (define line (format "void* ~a = prim_~a(~a);" (get-c-string lhs) op
@@ -137,33 +145,36 @@
 
        (append-line filename line)
 
-       (convert-proc-body letbody)]
+       (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs (apply-prim ,op ,arg)]) ,letbody)
        (define line (format "void* ~a = apply_prim_~a(~a);" (get-c-string lhs) (get-c-string op) (get-c-string arg)))
 
        (append-line filename line)
 
-       (convert-proc-body letbody)]
+       (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs (env-lookup ,env ,idx)]) ,letbody)
-       (define line (format "void* ~a = ((void**)~a)[~a];" (get-c-string lhs) env idx))
-       (append-line filename line)
+       (append-line filename (format "void* ~a = get_env_value(~a, encode_int((u32)~a));" (get-c-string lhs) env idx))
 
-       (convert-proc-body letbody)]
+       (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs ,val]) ,letbody)
-
-       ; variable assingment
-       (append-line filename (format "void* ~a = reinterpret_cast<void *>(ENCODE_INT((s32)~a));" (get-c-string lhs) val))
-       (convert-proc-body letbody)]
-
-
+       (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((u32)~a));" (get-c-string lhs) val))
+       (convert-proc-body proc_env proc_arg letbody)]
 
       [`(app-clo ,func ,args)
+
+       (append-line filename "\n//app-clo")
        (define procPtr (gensym 'cloPtr))
-       (append-line filename (format "\nvoid* ~a = (void*)get_closure_ptr(~a);" procPtr (get-c-string func)))
-       (append-line filename (format "reinterpret_cast<void (*)(void *, void *)>(~a)(~a, ~a);" procPtr (get-c-string func) args))
+       (define procEnv (gensym 'procEnv))
+
+       (append-line filename (format "void* ~a = get_closure_ptr(~a);" procPtr (get-c-string func)))
+       (append-line filename (format "void* ~a = get_env(~a);" procEnv (get-c-string func)))
+
+       (append-line filename "\n//calling next proc using a function pointer")
+       (append-line filename (format "auto function_ptr = reinterpret_cast<void (*)(void *, void *)>(~a);" procPtr))
+       (append-line filename (format "function_ptr(~a, ~a);" procEnv args))
 
        ]
 
@@ -180,23 +191,30 @@
     ; (pretty-print body)
     ; ; (displayln "--------")
 
-    (define func_name (format "void ~a(void* ~a, void* ~a)\n{\n" ptr env arg))
+    (define func_name (format "void ~a(void* ~a, void* ~a)\n{" ptr env arg))
 
     ; start of function definitions
     (append-line filename func_name)
-    (convert-proc-body body)
 
-    (append-line filename "\n}\n")
+    (append-line filename (format "cout<<\"In ~a\";" ptr))
+    (append-line filename (format "print_val(~a);\n" arg))
+
+    (convert-proc-body env arg body)
+
+    (append-line filename "}\n")
     ;end of function definitions.
     )
+
+  ;; converting the proc list to c++ functions in reverse order
+  ;; so that we don't get undefined function error.
   (map convert-procs (reverse proc_list))
 
-  ; write main function.
-  (append-line filename "int main(int argc, char **argv)\n{\n")
+  ; writing the main function.
+  (append-line filename "int main(int argc, char **argv)\n{")
 
-  (append-line filename "halt = (void**)malloc(sizeof(void*) * 1);");
-  (append-line filename "halt[0] = (void *)&fhalt;");
-  (append-line filename "root(0,0);\n");
+  ; (append-line filename "halt = make_closure(reinterpret_cast<u64 *>(&fhalt), 0);");
+  (append-line filename "//making a call to the root function to kick off our c++ emission.");
+  (append-line filename "root(0,0);");
 
   (append-line filename "}\n")
   ;end of main function.
@@ -206,70 +224,20 @@
 
 
 
-(define prog '(+ 1 2))
-(define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
-; (pretty-print clo_converted_prog)
+(define prog '(+ 1 2 (- 4 2 1)))
+(define prog3 '(- 5))
+(define prog2
+  '(let ([a '6])
+     (let ([d '2])
+       (let ([e '3])
+         (let ([c (λ (x) (+ x a d))])
+           (let ([f (λ (a b) (c (c (+ e d a b))))])
+             (f 4 5)))))))
+
+; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
+; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
+(define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
+(pretty-print clo_converted_prog)
 
 
-(define example
-  '((proc
-     root
-     mainenv3827
-     mainarg3828
-     (let ((a '6))
-       (let ((d '2))
-         (let ((e '3))
-           (let ((c (new-closure ptr3823 + d a)))
-             (let ((f (new-closure ptr3825 + d e)))
-               (let ((id3804 4))
-                 (let ((id3805 5))
-                   (let ((oldarg3820 '()))
-                     (let ((newarg3821 (prim cons id3805 oldarg3820)))
-                       (let ((newarg3822 (prim cons id3804 newarg3821)))
-                         (app-clo f newarg3822))))))))))))
-    (proc
-     ptr3823
-     env3824
-     arglst3806
-     (let ((a (env-lookup env3824 3)))
-       (let ((d (env-lookup env3824 2)))
-         (let ((+ (env-lookup env3824 1)))
-           (let ((x (prim car arglst3806)))
-             (let ((arg-lst3807 (prim cdr arglst3806)))
-               (let ((oldarg3808 '()))
-                 (let ((newarg3809 (prim cons d oldarg3808)))
-                   (let ((newarg3810 (prim cons a newarg3809)))
-                     (let ((newarg3811 (prim cons x newarg3810)))
-                       (app-clo + newarg3811)))))))))))
-    (proc
-     ptr3825
-     env3826
-     arglst3812
-     (let ((e (env-lookup env3826 3)))
-       (let ((d (env-lookup env3826 2)))
-         (let ((+ (env-lookup env3826 1)))
-           (let ((a (prim car arglst3812)))
-             (let ((arg-lst3813 (prim cdr arglst3812)))
-               (let ((b (prim car arg-lst3813)))
-                 (let ((arg-lst3814 (prim cdr arg-lst3813)))
-                   (let ((oldarg3815 '()))
-                     (let ((newarg3816 (prim cons b oldarg3815)))
-                       (let ((newarg3817 (prim cons a newarg3816)))
-                         (let ((newarg3818 (prim cons d newarg3817)))
-                           (let ((newarg3819 (prim cons e newarg3818)))
-                             (app-clo + newarg3819)))))))))))))))
-  )
-
-
-; (emit-cpp example)
 (emit-cpp clo_converted_prog)
-
-;void* e = ((void**)env3826)[3];
-
-#| int main()
-{
-    halt = (void**)malloc(sizeof(void*) * 1);
-    halt[0] = &fhalt;
-
-    root(0,0);
-} |#
