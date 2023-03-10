@@ -5,16 +5,49 @@
 using namespace std;
 
 // Some helpful Macros
-#define NULL_VALUE 0
-#define ENV 9
-#define ENV_ARRAY 8
 
-extern "C"
+
+
+/**
+ * 
+ * @param val value for performing the masking
+ * @return This macro masks off the three least significant bits of the input value 
+ *          by performing a bitwise AND operation with the complement of a 7 - bit mask.
+ */
+#define MASK(val) ((val) & ~(7ULL))
+
+#define NULL_VALUE 0
+#define ENV_ARRAY 1
+
+                                                                                                                                           extern "C"
 {
-   typedef unsigned long long u64;
-   typedef signed long long s64;
-   typedef unsigned long u32;
-   typedef signed long s32;
+   typedef uint64_t u64;
+   typedef int64_t s64;
+   typedef uint32_t u32;
+   typedef int32_t s32;
+
+   /*
+   //encoding and decoding process : example for interger
+
+   // 7ULL     = 0000000000000000000000000000000000000000000000000000000000000111
+   // ~(7ULL)  = 1111111111111111111111111111111111111111111111111111111111111000
+
+   val = 3
+   encode_int(val) 		 			   = 0000000000000000000000000000001100000000000000000000000000000000
+
+   //decoding
+   7ULL                     			= 0000000000000000000000000000000000000000000000000000000000000111
+   ~7ULL                    			= 1111111111111111111111111111111111111111111111111111111111111000
+   mask(val)          		 			= val & ~(7ULL)
+                                    = 0000000000000000000000000000001100000000000000000000000000000000
+                                    & 1111111111111111111111111111111111111111111111111111111111111000
+                                    ------------------------------------------------------------------
+                                    = 0000000000000000000000000000001100000000000000000000000000000000
+
+   mask(val) >> 32 	     			   = 0000000000000000000000000000000000000000000000000000000000000011
+   ((u32)(mask(val) >> 32)) 			= 00000000000000000000000000000011
+   ((s32)((u32)(mask(val) >> 32)))	= 11, which is 3
+   */
 
    enum DataType
    {
@@ -23,9 +56,51 @@ extern "C"
       STRING = 0x3,
       FLOAT = 0x4,
       CLO = 0x5,
+      ENV = 0x6,
       CONS = 0x7
    };
 
+   s32 decode_int(u64 v)
+   {
+      return ((s32)((u32)(MASK(v) >> 32)));
+   }
+
+   u64 encode_int(s32 v)
+   {
+      return ((((u64)((u32)(v))) << 32) | INT);
+   }
+
+   u64 *decode_cons(u64 v)
+   {
+      return ((u64 *)MASK(v));
+   }
+
+   u64 encode_cons(u64 * v)
+   {
+      return (((u64)(v)) | CONS);
+   }
+
+   u64 *decode_clo(u64 v)
+   {
+      return ((u64 *)MASK(v));
+   }
+
+   u64 encode_clo(u64 * v)
+   {
+      return (((u64)(v)) | CLO);
+   }
+
+   u64 *decode_env_arr(u64 v)
+   {
+      return ((u64 *)MASK(v));
+   }
+
+   u64 encode_env_arr(u64 * v)
+   {
+      return (((u64)(v)) | ENV);
+   }
+
+   /* --- old encoding-decoding----
    s32 decode_int(u64 v)
    {
       return (s32)(v >> 32);
@@ -58,13 +133,14 @@ extern "C"
 
    u64 *decode_env_arr(u64 v)
    {
-      return (u64 *)(v & ~ENV_ARRAY);
+      return (u64 *)(v & ~ENV);
    }
 
    u64 encode_env_arr(u64 *v)
    {
-      return (((u64)(v)) | ENV_ARRAY);
+      return (((u64)(v)) | ENV);
    }
+ */
 
    /**
     * This function recursively prints a give value
@@ -248,12 +324,13 @@ extern "C"
 
       u64 car_value = decode_int(car);
 
-      cout<<"car value: "<<car_value<<endl;
+      cout << "car value: " << car_value << endl;
 
-      if (cdr == NULL_VALUE){
+      if (cdr == NULL_VALUE)
+      {
          // fix error when (- 5), check builtin implementation
          u64 res = car_value * -1;
-         cout<<"herer..."<< res <<endl;
+         // cout << "herer..." << res << endl;
          return reinterpret_cast<void *>(encode_int((s32)res));
       }
 
@@ -263,8 +340,8 @@ extern "C"
       {
          u64 *pp = decode_cons(cdr);
 
-         cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
-         cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
+         // cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
+         // cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
 
          result -= decode_int(pp[0]);
 
@@ -288,7 +365,7 @@ extern "C"
       u64 *env_array = (u64 *)(malloc((temp_env_len + 1) * sizeof(u64)));
 
       // to distinguish env array from other data types
-      env_array[0] = (temp_env_len << 3) | ENV;
+      env_array[0] = (temp_env_len << 3) | ENV_ARRAY;
 
       for (u64 i = 1; i <= temp_env_len; i++)
       {
@@ -355,9 +432,9 @@ extern "C"
 
       // cout<<"ArrLen: "<<sizeof(decode_env_arr(env_arr))/sizeof(decode_env_arr(env_arr)[0]) <<endl;
 
-      // using a pointer to access the element
       u64 val = decode_env_arr(env_arr)[idx_val];
 
+      // return reinterpret_cast<void *>(((u64*)decode_env_arr(env_arr))[1+(decode_int(idx))]);
       return reinterpret_cast<void *>(val);
    }
 

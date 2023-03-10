@@ -76,7 +76,7 @@
 
        (match val
          [(? number? )
-          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((u32)~a));" (get-c-string lhs) val))
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((s32)~a));" (get-c-string lhs) val))
           (convert-proc-body proc_env proc_arg letbody)]
 
          [(? boolean? )
@@ -108,7 +108,7 @@
 
        (append-line
         filename
-        (format "~a = allocate_env_space(encode_int((u32)~a));" proc_env arglength))
+        (format "~a = allocate_env_space(encode_int((s32)~a));" proc_env arglength))
 
        (append-line
         filename
@@ -130,7 +130,7 @@
 
          (append-line
           filename
-          (format "set_env(~a, encode_int((u32)~a), ~a);" proc_env i (get-c-string item))))
+          (format "set_env(~a, encode_int((s32)~a), ~a);" proc_env i (get-c-string item))))
 
        ;  (when (> (+ arglength 1) 1) (append-line filename "\n"))
        (append-line filename "\n")
@@ -155,12 +155,12 @@
        (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs (env-lookup ,env ,idx)]) ,letbody)
-       (append-line filename (format "void* ~a = get_env_value(~a, encode_int((u32)~a));" (get-c-string lhs) env idx))
+       (append-line filename (format "void* ~a = get_env_value(~a, encode_int((s32)~a));" (get-c-string lhs) env idx))
 
        (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs ,val]) ,letbody)
-       (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((u32)~a));" (get-c-string lhs) val))
+       (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((s32)~a));" (get-c-string lhs) val))
        (convert-proc-body proc_env proc_arg letbody)]
 
       [`(app-clo ,func ,args)
@@ -223,8 +223,9 @@
   'cpp-emission-done!)
 
 
-
-(define prog '(+ 1 2 (- 4 2 1)))
+(define prog4 '(apply + ((lambda x x) 2 3)))
+(define prog '(+ 1 2 (+ 3 5)))
+; (define prog '(+ 1 2))
 (define prog3 '(- 5))
 (define prog2
   '(let ([a '6])
@@ -235,8 +236,9 @@
              (f 4 5)))))))
 
 ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
-; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
-(define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
+(define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
+; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog4))))))
+; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
 (pretty-print clo_converted_prog)
 
 
