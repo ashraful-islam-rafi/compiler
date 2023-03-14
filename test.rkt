@@ -1,6 +1,13 @@
 #lang racket
 
-(require "cekm.rkt" "parser.rkt" "desugar.rkt" "anf-convert.rkt" "cps-convert.rkt")
+(require "cekm.rkt"
+         "parser.rkt"
+         "desugar.rkt"
+         "anf-convert.rkt"
+         "cps-convert.rkt"
+         "closure-convert.rkt"
+         "emit-cpp.rkt"
+         )
 
 ;;;;;;; test-cases
 (define test-cases
@@ -110,9 +117,26 @@
 ;;;;;;; New test cases
 (define test-cases2
   (list
+   ; '() ;; surprisingly this program fails!!!! fix this!
    '(+ 2 (* 3 2))
    '(+ (if 1 2 #f) 2)
+   '(list 2 3 (list 4 5) 6)
    '(if (= 2 (length (list 1 4)))  #t #f)
+
+   '(eq? 200 200)
+   '(equal? 200 200)
+   '(equal? 2 2.0)
+   '(length (list 1 4))
+   '(null? '(1 2 3))
+   '(null? '())
+   '(odd? 1)
+   '(odd? 2)
+   '(even? 2)
+   '(even? 21)
+   '(positive? 500)
+   '(positive? -500)
+   '(negative? 500)
+   '(negative? -500)
 
    '(let ([a '2]
           [b '3])
@@ -127,7 +151,7 @@
             (let ([f (λ (b) (+ e d a b))])
               (f a))))))
 
-    '(let ([a '6])
+   '(let ([a '6])
       (let ([d '2])
         (let ([e '3])
           (let ([c (λ (x) (+ x a d))])
@@ -156,6 +180,12 @@
              #t
              #t))))
 
+   '(car (list 2 3 4))
+   '(cdr (list 2 3 4))
+   '(cons 1 2)
+   '(cons 1 (cons 2 (cons 3 '())))
+
+
    '(append (list 1 2) (list 3 4) (list 5 7))
    '(foldl + 0 (list 1 2 3))
    '(foldr + 0 (list 1 2 3))
@@ -171,21 +201,70 @@
 
 
 ;;;;;;; Run cases
+#;(for-each
+   (λ (prog)
+     ;  (define prog+ (compile prog))
+     (displayln (~a
+                 "case        : " prog
+                 ; "\noutput      : " (cekm-interp prog)
+                 ; "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
+                 ; "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
+                 "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
+                 "\nafter-cps   : " (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog prog)))))
+                 "\n")))
+   test-cases2)
+
+
+
+;;;;;;; Run to see Final Output
+; incomplete
+; how do I run each case, which generates a cpp file, runs it,
+; and then print the output and move to the next case and repeat!!!
+;==============================
+
+(define test-cases-for-final-output
+  (list
+   ;  '(apply + ((lambda x x) 2 3))
+   ;  '(+ 1 2 (- 5 2) (+ 1 2))
+   ;  '(* 2 3 (+ 3 2) (- 4 1))
+   ; '(* 3)
+   ;  '(- 5)
+   ;  '(cons 1 (cons 2 (cons 3 (cons 4 '()))))
+   ; '(apply + (cons 1 (cons 2 (cons 3 (cons 4 '())))))
+   ;  '(let ([a '6])
+   ;     (let ([d '2])
+   ;       (let ([e '3])
+   ;         (let ([c (λ (x) (+ x a d))])
+   ;           (let ([f (λ (a b) (c (c (+ e d a b))))])
+   ;             (f 4 5))))))
+   ;  '(/ 4 2) ; not implemented yet!
+   ;  '(list 2 3 (list 4 5) 6) ; not implemented yet!
+   ;  '(car '((2 3) (4 5)))
+   ;  '(cdr '((2 3) (4 5)))
+   ;  '(car (cdr (cdr '((2 3) (4 5) 6)))) ;=> 6
+   ; '(null? '(1 2 3))
+   ; '(null? '())
+   ;  '(eq? 200 100)
+   ;  '(eq? (* 6 7) 42)
+   ; '(equal? 200 100)
+   ; '(equal? (* 6 7) 42)
+   ;  '(equal? 'yes 'no)
+   '(equal? "yes" "yes")
+
+   ))
+
+;;;;;;; Run cases for c++ emission
 (for-each
+
  (λ (prog)
-   ;  (define prog+ (compile prog))
+   (define prog+ (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
+   (pretty-print prog+)
    (displayln (~a
                "case        : " prog
-               ; "\noutput      : " (cekm-interp prog)
-               ; "\nwith-prims  : " (cekm-interp (add-prims-to-prog prog))
-               ; "\nwith-desugar: " (cekm-interp (desugar (add-prims-to-prog prog)))
-               "\nafter-anf   : " (cekm-interp (anf-convert (desugar (add-prims-to-prog prog))))
-               "\nafter-cps   : " (cekm-interp (cps-convert (anf-convert (desugar (add-prims-to-prog prog)))))
+               "\noutput      : " (emit-cpp prog+)
                "\n")))
- test-cases2)
 
-
-
+ test-cases-for-final-output)
 
 
 

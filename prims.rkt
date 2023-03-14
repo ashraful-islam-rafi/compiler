@@ -3,8 +3,10 @@
 (provide default-prims prims? builtins Ycomb)
 
 ; (define default-prims '(+ * = < > car cdr list null? cons length equal? eq? cdar even?))
-; (define default-prims '(* + - / expt = > < car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?))
-(define default-prims '(+ -));  - / expt = car cdr cons list equal? null? odd? even? positive? negative?))
+
+; this one
+; (define default-prims '(* + - / expt = > < car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?)) 
+(define default-prims '(+ - * car cdr cons null? eq? equal?));  / = > < expt list equal? odd? even? positive? negative?))
 
 ; (define builtins '())
 (define builtins 

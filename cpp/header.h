@@ -4,50 +4,26 @@
 
 using namespace std;
 
-// Some helpful Macros
-
-
-
 /**
- * 
+ *
  * @param val value for performing the masking
- * @return This macro masks off the three least significant bits of the input value 
- *          by performing a bitwise AND operation with the complement of a 7 - bit mask.
+ * @return This macro masks off the three least significant bits of the input value by
+ * performing a bitwise AND operation with the complement of a 7 - bit mask.
  */
 #define MASK(val) ((val) & ~(7ULL))
 
 #define NULL_VALUE 0
 #define ENV_ARRAY 1
+#define TRUE_VALUE 47   // 00101111
+#define FALSE_VALUE 55  // 00110111
+#define RANDOM_VALUE 63 // 00111111
 
-                                                                                                                                           extern "C"
+extern "C"
 {
    typedef uint64_t u64;
    typedef int64_t s64;
    typedef uint32_t u32;
    typedef int32_t s32;
-
-   /*
-   //encoding and decoding process : example for interger
-
-   // 7ULL     = 0000000000000000000000000000000000000000000000000000000000000111
-   // ~(7ULL)  = 1111111111111111111111111111111111111111111111111111111111111000
-
-   val = 3
-   encode_int(val) 		 			   = 0000000000000000000000000000001100000000000000000000000000000000
-
-   //decoding
-   7ULL                     			= 0000000000000000000000000000000000000000000000000000000000000111
-   ~7ULL                    			= 1111111111111111111111111111111111111111111111111111111111111000
-   mask(val)          		 			= val & ~(7ULL)
-                                    = 0000000000000000000000000000001100000000000000000000000000000000
-                                    & 1111111111111111111111111111111111111111111111111111111111111000
-                                    ------------------------------------------------------------------
-                                    = 0000000000000000000000000000001100000000000000000000000000000000
-
-   mask(val) >> 32 	     			   = 0000000000000000000000000000000000000000000000000000000000000011
-   ((u32)(mask(val) >> 32)) 			= 00000000000000000000000000000011
-   ((s32)((u32)(mask(val) >> 32)))	= 11, which is 3
-   */
 
    enum DataType
    {
@@ -70,12 +46,35 @@ using namespace std;
       return ((((u64)((u32)(v))) << 32) | INT);
    }
 
+   s32 decode_bool(u64 v)
+   {
+      return ((s32)((u32)(MASK(v) >> 32)));
+   }
+
+   u64 encode_bool(s32 v)
+   {
+      return ((((u64)((u32)(v))) << 32) | BOOLEAN);
+   }
+
+   string decode_string(u64 v)
+   {
+      string *decoded = ((string *)MASK(v));
+      string str = *decoded;
+      // delete decoded;
+      return str;
+   }
+
+   u64 encode_string(const string *v)
+   {
+      return (((u64)(v)) | STRING);
+   }
+
    u64 *decode_cons(u64 v)
    {
       return ((u64 *)MASK(v));
    }
 
-   u64 encode_cons(u64 * v)
+   u64 encode_cons(u64 *v)
    {
       return (((u64)(v)) | CONS);
    }
@@ -85,7 +84,7 @@ using namespace std;
       return ((u64 *)MASK(v));
    }
 
-   u64 encode_clo(u64 * v)
+   u64 encode_clo(u64 *v)
    {
       return (((u64)(v)) | CLO);
    }
@@ -95,7 +94,7 @@ using namespace std;
       return ((u64 *)MASK(v));
    }
 
-   u64 encode_env_arr(u64 * v)
+   u64 encode_env_arr(u64 *v)
    {
       return (((u64)(v)) | ENV);
    }
@@ -144,34 +143,48 @@ using namespace std;
 
    /**
     * This function recursively prints a give value
-    * @param v value we are trying to print
-    * @return value type
+    * @param val value we are trying to print
+    * @return void
     */
-   void recursive_prim_print(u64 v)
+   void recursive_prim_print(u64 val)
    {
-      switch (v & 7)
+      switch (val & 7)
       {
       case NULL_VALUE:
          cout << "()";
          break;
       case INT:
-         cout << decode_int(v);
+         cout << decode_int(val);
+         break;
+      case BOOLEAN:
+      {
+         if (decode_bool(val) == 1)
+            cout << "#t";
+         else
+            cout << "#f";
+
+         break;
+      }
+      case STRING:
+         cout << decode_string(val);
          break;
       case CLO:
          cout << "#<procedure>";
          break;
       case CONS:
       {
-         u64 *p = decode_cons(v);
+         u64 *cell = decode_cons(val);
+
          cout << "(";
-         recursive_prim_print(p[0]);
+         recursive_prim_print(cell[0]);
          cout << " . ";
-         recursive_prim_print(p[1]);
+         recursive_prim_print(cell[1]);
          cout << ")";
+
          break;
       }
       default:
-         cout << "Error: unknown prim value: " << v << endl;
+         cout << "Error in recursive_prim_print: unknown prim value: " << val << endl;
       }
    }
 
@@ -200,13 +213,12 @@ using namespace std;
       {
       case CONS:
       {
-         u64 *p = decode_cons(val);
+         u64 *cell = decode_cons(val);
          cout << "'(";
-         recursive_prim_print(p[0]);
+         recursive_prim_print(cell[0]);
          cout << " . ";
-         recursive_prim_print(p[1]);
+         recursive_prim_print(cell[1]);
          cout << ")";
-         cout << endl;
          exit(0);
          return NULL_VALUE;
       }
@@ -231,92 +243,282 @@ using namespace std;
     * This function creates a cons cell
     * @param arg1 represents the car value
     * @param arg2 represents the cdr value
-    * @return the encoded cons cell.
+    * @return an encoded cons cell.
     */
    void *prim_cons(void *arg1, void *arg2)
    {
       u64 car = reinterpret_cast<u64>(arg1);
       u64 cdr = reinterpret_cast<u64>(arg2);
 
-      u64 *ptr = (u64 *)(malloc(2 * sizeof(u64)));
-      ptr[0] = car;
-      ptr[1] = cdr;
+      u64 *cell = (u64 *)(malloc(2 * sizeof(u64)));
+      cell[0] = car;
+      cell[1] = cdr;
 
-      return reinterpret_cast<void *>(encode_cons(ptr));
+      return reinterpret_cast<void *>(encode_cons(cell));
    }
 
    /**
     *
-    * @param p is the cons cell
+    * @param val is the cons cell
     * @return the car value of a cons cell
     */
-   void *prim_car(void *p)
+   void *prim_car(void *val)
    {
-      u64 ptr = reinterpret_cast<u64>(p);
+      u64 ptr = reinterpret_cast<u64>(val);
 
       if ((ptr & 7) != CONS)
       {
-         cout << "Error-car: expected a cons cell!" << endl;
+         cout << "Error in prim_car: expected a cons cell!" << endl;
          exit(0);
       }
 
-      u64 *pp = decode_cons(ptr);
-      return reinterpret_cast<void *>(pp[0]);
+      u64 *cell = decode_cons(ptr);
+      return reinterpret_cast<void *>(cell[0]);
    }
 
    /**
     *
-    * @param p is the cons cell
+    * @param val is the cons cell
     * @return the cdr value of a cons cell
     */
-   void *prim_cdr(void *p)
+   void *prim_cdr(void *val)
    {
-      u64 ptr = reinterpret_cast<u64>(p);
+      u64 ptr = reinterpret_cast<u64>(val);
 
       if ((ptr & 7) != CONS)
       {
-         cout << "Error-cdr: expected a cons cell!" << endl;
+         cout << "Error in prim_cdr: expected a cons cell!" << endl;
          exit(0);
       }
 
-      u64 *pp = decode_cons(ptr);
-      return reinterpret_cast<void *>(pp[1]);
+      u64 *cell = decode_cons(ptr);
+      return reinterpret_cast<void *>(cell[1]);
    }
 
    /**
     *
-    * @param p is the cons cell
+    * @param lst argument list
+    * @return a new cons cell created from arglist's first two elements using the prim_cons function
+    *  */
+   void *apply_prim_cons(void *lst)
+   {
+      void *val1 = prim_car(lst);
+      void *val2 = prim_car(prim_cdr(lst));
+
+      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
+         cout << "Error in apply_prim_cons: argument length is greater than 2.";
+
+      return prim_cons(val1, val2);
+   }
+
+   /**
+    *
+    * @param lst argument list (a cons cell)
+    * @return the car value of that cell using the prim_car function
+    *  */
+   void *apply_prim_car(void *lst)
+   {
+      // cout << "In apply_prim_car";
+      // print_val(lst);
+
+      u64 temp_lst = reinterpret_cast<u64>(lst);
+
+      if ((temp_lst & 7) != CONS)
+      {
+         cout << "Error in apply_prim_car: expected a cons cell!" << endl;
+         exit(0);
+      }
+      else
+      {
+         u64 *cell = decode_cons(temp_lst);
+         return prim_car(reinterpret_cast<void *>(cell[0]));
+      }
+   }
+
+   /**
+    *
+    * @param lst argument list (a cons cell)
+    * @return the cdr value of that cell using the prim_cdr function
+    *  */
+   void *apply_prim_cdr(void *lst)
+   {
+      u64 temp_lst = reinterpret_cast<u64>(lst);
+
+      if ((temp_lst & 7) != CONS)
+      {
+         cout << "Error in apply_prim_cdr: expected a cons cell!" << endl;
+         exit(0);
+      }
+      else
+      {
+         u64 *cell = decode_cons(temp_lst);
+         return prim_cdr(reinterpret_cast<void *>(cell[0]));
+      }
+   }
+
+   /**
+    *
+    * @param lst argument list (a cons cell)
+    * @return true if the list is null, false otherwise!
+    *  */
+   void *apply_prim_null_u63(void *lst)
+   {
+      u64 temp_lst = reinterpret_cast<u64>(lst);
+
+      if ((temp_lst & 7) != CONS)
+      {
+         cout << "Error in apply_prim_null_u63: expected a cons cell!" << endl;
+         exit(0);
+      }
+      else
+      {
+         u64 *cell = decode_cons(temp_lst);
+         u64 car = cell[0];
+
+         if (car == NULL_VALUE)
+            return reinterpret_cast<void *>(encode_bool((s32)1));
+         else
+            return reinterpret_cast<void *>(encode_bool((s32)0));
+      }
+   }
+
+   /**
+    * This function performs eq? operation
+    * @param lst argument list (a cons cell)
+    * @return true if car and cdr values are equal, false otherwise!
+    *  */
+   void *apply_prim_eq_u63(void *lst)
+   {
+      void *val1 = prim_car(lst);
+      void *val2 = prim_car(prim_cdr(lst));
+
+      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
+         cout << "Error in apply_prim_eq_u63: argument length is greater than 2.";
+
+      u64 car = reinterpret_cast<u64>(val1);
+      u64 cdr = reinterpret_cast<u64>(val2);
+
+      if (((car & 7) == STRING) && ((cdr & 7) == STRING))
+      {
+         if (decode_string(car) == decode_string(cdr))
+            return reinterpret_cast<void *>(encode_bool((s32)1));
+         else
+            return reinterpret_cast<void *>(encode_bool((s32)0));
+      }
+      else
+      {
+         if (car == cdr)
+            return reinterpret_cast<void *>(encode_bool((s32)1));
+         else
+            return reinterpret_cast<void *>(encode_bool((s32)0));
+      }
+   }
+
+   /**
+    * This function performs equal? operation
+    * @param lst argument list (a cons cell)
+    * @return true if car and cdr values are equal, false otherwise!
+    *  */
+   void *apply_prim_equal_u63(void *lst)
+   {
+      void *val1 = prim_car(lst);
+      void *val2 = prim_car(prim_cdr(lst));
+
+      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
+         cout << "Error in apply_prim_equal_u63: argument length is greater than 2.";
+
+      u64 car = reinterpret_cast<u64>(val1);
+      u64 cdr = reinterpret_cast<u64>(val2);
+
+      if (((car & 7) == STRING) && ((cdr & 7) == STRING))
+      {
+         if (decode_string(car) == decode_string(cdr))
+            return reinterpret_cast<void *>(encode_bool((s32)1));
+         else
+            return reinterpret_cast<void *>(encode_bool((s32)0));
+      }
+      else
+      {
+         if (car == cdr)
+            return reinterpret_cast<void *>(encode_bool((s32)1));
+         else
+            return reinterpret_cast<void *>(encode_bool((s32)0));
+      }
+   }
+
+   /**
+    * Performs + operation
+    * @param val is the cons cell
     * @return the summation of values in the cons cell
     */
-   void *apply_prim__u43(void *p)
+   void *apply_prim__u43(void *val)
    {
-      u64 ptr = reinterpret_cast<u64>(p);
+      u64 ptr = reinterpret_cast<u64>(val);
       u64 sum = 0;
 
       while ((ptr & 7) == CONS)
       {
-         u64 *pp = decode_cons(ptr);
+         u64 *cell = decode_cons(ptr);
 
          // cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
          // cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
 
-         sum += decode_int(pp[0]);
-
-         // cout << "sum: " << sum << endl;
-         ptr = pp[1];
+         sum += decode_int(cell[0]);
+         ptr = cell[1];
       }
 
       return reinterpret_cast<void *>(encode_int((s32)sum));
    }
 
    /**
-    *
-    * @param p is the cons cell
-    * @return the summation of values in the cons cell
+    * Performs * operation
+    * @param val is the cons cell
+    * @return the multiplication of values in the cons cell
     */
-   void *apply_prim__u45(void *p)
+   void *apply_prim__u42(void *val)
    {
-      u64 ptr = reinterpret_cast<u64>(p);
+      u64 ptr = reinterpret_cast<u64>(val);
+
+      u64 *cell = decode_cons(ptr);
+
+      if (cell == NULL_VALUE)
+         return reinterpret_cast<void *>(encode_int((s32)0));
+      else
+      {
+         u64 res = decode_int(cell[0]); // get car value
+
+         // if car is zero return 0
+         if (res == 0)
+         {
+            return reinterpret_cast<void *>(encode_int((s32)0));
+         }
+         else
+         {
+            u64 temp_res = 1;
+            while ((ptr & 7) == CONS)
+            {
+               u64 *temp_cell = decode_cons(ptr);
+
+               u64 car = temp_cell[0];
+               u64 cdr = temp_cell[1];
+
+               temp_res *= decode_int(temp_cell[0]);
+               ptr = temp_cell[1];
+            }
+
+            return reinterpret_cast<void *>(encode_int((s32)temp_res));
+         }
+      }
+   }
+
+   /**
+    * Performs - operation
+    * @param val is the cons cell
+    * @return the substraction of values in the cons cell
+    */
+   void *apply_prim__u45(void *val)
+   {
+      u64 ptr = reinterpret_cast<u64>(val);
 
       u64 *cell = decode_cons(ptr);
       u64 car = cell[0];
@@ -324,13 +526,9 @@ using namespace std;
 
       u64 car_value = decode_int(car);
 
-      cout << "car value: " << car_value << endl;
-
       if (cdr == NULL_VALUE)
       {
-         // fix error when (- 5), check builtin implementation
          u64 res = car_value * -1;
-         // cout << "herer..." << res << endl;
          return reinterpret_cast<void *>(encode_int((s32)res));
       }
 
@@ -338,15 +536,12 @@ using namespace std;
 
       while (cdr != NULL_VALUE)
       {
-         u64 *pp = decode_cons(cdr);
+         u64 *temp_cell = decode_cons(cdr);
 
-         // cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
-         // cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
-
-         result -= decode_int(pp[0]);
+         result -= decode_int(temp_cell[0]);
 
          cout << "result: " << result << endl;
-         cdr = pp[1];
+         cdr = temp_cell[1];
       }
 
       return reinterpret_cast<void *>(encode_int((s32)result));
@@ -415,8 +610,7 @@ using namespace std;
       u64 *elem_ptr = &(decode_env_arr(env_arr))[idx_val];
       *elem_ptr = value;
 
-      // return NULL_VALUE;
-      return nullptr; // reinterpret_cast<void *>(NULL_VALUE);
+      return reinterpret_cast<void *>(NULL_VALUE);
    }
 
    /**
@@ -434,7 +628,6 @@ using namespace std;
 
       u64 val = decode_env_arr(env_arr)[idx_val];
 
-      // return reinterpret_cast<void *>(((u64*)decode_env_arr(env_arr))[1+(decode_int(idx))]);
       return reinterpret_cast<void *>(val);
    }
 
@@ -473,12 +666,15 @@ using namespace std;
     */
    void *apply_prim_halt(void *arglist)
    {
-      cout << "Final return value: ";
+      // cout << "In apply_prim_halt: ";
+      cout << "Final return value:";
+
+      // u64 value = reinterpret_cast<u64>(prim_car(arglist));
+      // cout<< (value & 7) <<endl;
+      // cout << prim_car(arglist) << endl;
+
       print_val(prim_car(arglist));
-
       exit(0);
-
-      return reinterpret_cast<void *>(prim_car(arglist));
    }
 
    // void *halt;
@@ -500,7 +696,6 @@ using namespace std;
 
       exit(0);
    }
-
    /* int main() {
      int value = 1001;
      void* encodedInt = encodeInt(value);

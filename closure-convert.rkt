@@ -297,7 +297,7 @@
 ; (pretty-print (closure-convert example2))
 ; (pretty-print (closure-convert '(+ 1 2)))
 
-; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2 3 4)))))))
+; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '()))))))
 ; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog example2))))))
 
 (define example3

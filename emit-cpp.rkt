@@ -6,6 +6,8 @@
             "anf-convert.rkt"
             "desugar.rkt")
 
+(provide emit-cpp)
+
 (define filename "cpp/cpp_program.cpp")
 
 ; test program
@@ -37,8 +39,9 @@
   ; starting the program by replacing the old file, if exists
   (append-line filename "#include<stdio.h>" 'replace)
   (append-line filename "#include<string.h>" )
+  (append-line filename "#include<iostream>" )
   (append-line filename (string-append "#include " "\"header.h\""))
-  (append-line filename "using namespace std;\n" )
+  (append-line filename "\nusing namespace std;\n" )
 
 
   (append-line filename test_prog)
@@ -87,8 +90,14 @@
           (append-line filename (format "void* ~a = encode_null();" (get-c-string lhs)))
           (convert-proc-body proc_env proc_arg letbody)]
 
-         [(or (? string? ) (? symbol?))
-          (append-line filename (format "void* ~a = encode_string(~a);" (get-c-string lhs) val))
+         [(? symbol?)
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_string(new string(\"~a\")));"
+                                        (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
+
+         [(? string? )
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_string(new string(\"~a\")));"
+                                        (get-c-string lhs) val))
           (convert-proc-body proc_env proc_arg letbody)]
 
          [_ (raise (format "Unknown datatype! ~a" val))]
@@ -160,8 +169,37 @@
        (convert-proc-body proc_env proc_arg letbody)]
 
       [`(let ([,lhs ,val]) ,letbody)
-       (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((s32)~a));" (get-c-string lhs) val))
-       (convert-proc-body proc_env proc_arg letbody)]
+
+       (match val
+         [(? number? )
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((s32)~a));" (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
+
+         [(? boolean? )
+          (append-line filename (format "void* ~a = encode_boolean(~a);" (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
+
+         [(? null? )
+          (append-line filename (format "void* ~a = encode_null();" (get-c-string lhs)))
+          (convert-proc-body proc_env proc_arg letbody)]
+
+         [(? symbol?)
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_string(new string(\"~a\")));"
+                                        (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
+
+         [(? string? )
+          (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_string(new string(\"~a\")));"
+                                        (get-c-string lhs) val))
+          (convert-proc-body proc_env proc_arg letbody)]
+
+
+         [_ (raise (format "Unknown datatype! ~a" val))]
+         )
+
+       ;  (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((s32)~a));" (get-c-string lhs) val))
+       ;  (convert-proc-body proc_env proc_arg letbody)
+       ]
 
       [`(app-clo ,func ,args)
 
@@ -196,6 +234,7 @@
     ; start of function definitions
     (append-line filename func_name)
 
+    ; uncomment these two lines for debugging!
     (append-line filename (format "cout<<\"In ~a\";" ptr))
     (append-line filename (format "print_val(~a);\n" arg))
 
@@ -223,23 +262,24 @@
   'cpp-emission-done!)
 
 
-(define prog4 '(apply + ((lambda x x) 2 3)))
-(define prog '(+ 1 2 (+ 3 5)))
-; (define prog '(+ 1 2))
-(define prog3 '(- 5))
-(define prog2
-  '(let ([a '6])
-     (let ([d '2])
-       (let ([e '3])
-         (let ([c (λ (x) (+ x a d))])
-           (let ([f (λ (a b) (c (c (+ e d a b))))])
-             (f 4 5)))))))
+; (define prog4 '(apply + ((lambda x x) 2 3)))
+; (define prog '(+ 1 2 (- 3 5)))
+; (define prog3 '(- 5))
+; (define prog2
+;   '(let ([a 6])
+;      (let ([d 2])
+;        (let ([e '3])
+;          (let ([c (λ (x) (+ x a d))])
+;            (let ([f (λ (a b) (c (c (+ e d a b))))])
+;              (f 4 5)))))))
 
-; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
-(define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
-; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog4))))))
-; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
-(pretty-print clo_converted_prog)
+; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
+; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
+; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog4))))))
+; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
+; ;(pretty-print clo_converted_prog)
 
 
-(emit-cpp clo_converted_prog)
+; (emit-cpp clo_converted_prog)
+
+; fix-bug for '() program!

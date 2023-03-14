@@ -3,3 +3,4 @@ compiled
 .vscode/
 **/*.rkt~
 **/*.bak
+cpp/cpp_program

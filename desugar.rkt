@@ -190,9 +190,10 @@
     [`(,ef ,ea-list ...)
      (cons (desugar ef) (map desugar ea-list))]
 
-    [else (raise `(error ,(format "Unknown S-expression: ~a" exp)))]))
+    [else (raise `(error ,(format "Unknown S-expression!: ~a" exp)))]))
 
-;(desugar '(equal? 2 4))
+; (desugar '())
+; (desugar '(equal? 2 4))
 ;(desugar '(+ 1 2 3))
 ;(desugar '(foldl + 0 '(1 2 3)))
 ;(desugar '(apply + (list 1 3 4)))
