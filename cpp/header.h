@@ -357,6 +357,141 @@ extern "C"
    }
 
    /**
+    * This function performs the specified comparison operation on the given arguments.
+    * @param lst argument list (a cons cell containing the arguments)
+    * @param cmp_op comparison operator (a function pointer that takes two u64 values and returns a boolean)
+    * @return true if the comparison is true, false otherwise!
+    */
+   void *apply_comparison_op(void *lst, bool (*cmp_op)(u64, u64))
+   {
+      void *val1 = prim_car(lst);
+      void *val2 = prim_car(prim_cdr(lst));
+
+      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
+         cout << "Error in apply_comparison_op: argument length is greater than 2.";
+
+      u64 car = reinterpret_cast<u64>(val1);
+      u64 cdr = reinterpret_cast<u64>(val2);
+
+      if (cmp_op(car, cdr))
+         return reinterpret_cast<void *>(encode_bool((s32)1));
+      else
+         return reinterpret_cast<void *>(encode_bool((s32)0));
+   }
+
+   /**
+    * This function performs the specified comparison operation on the given arguments.
+    * @param lst one argument list
+    * @param cmp_op comparison operator (a function pointer that takes one u64 value and returns a boolean)
+    * @return true if the comparison is true, false otherwise!
+    */
+   void *apply_opr(void *lst, bool (*apply_op)(u64))
+   {
+      void *val1 = prim_car(lst);
+      void *val2 = prim_cdr(lst);
+
+      if (prim_cdr(lst) != NULL_VALUE)
+         cout << "Error in apply_opr: argument length is greater than 1.";
+
+      u64 car = reinterpret_cast<u64>(val1);
+
+      if (apply_op(car))
+         return reinterpret_cast<void *>(encode_bool((s32)1));
+      else
+         return reinterpret_cast<void *>(encode_bool((s32)0));
+   }
+
+   /**
+    * This function performs >= operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is greater than or equal the cdr value, false otherwise!
+    */
+   bool cmp_op_ge(u64 x, u64 y)
+   {
+      return x >= y;
+   }
+
+   /**
+    * This function performs <= operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is less than or equal the cdr value, false otherwise!
+    */
+   bool cmp_op_le(u64 x, u64 y)
+   {
+      return x <= y;
+   }
+
+   /**
+    * This function performs < operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is less than the cdr value, false otherwise!
+    */
+   bool cmp_op_less(u64 x, u64 y)
+   {
+      return x < y;
+   }
+
+   /**
+    * This function performs > operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is greater than the cdr value, false otherwise!
+    */
+   bool cmp_op_greater(u64 x, u64 y)
+   {
+      return x > y;
+   }
+
+   /**
+    * This function performs = operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is equal(==) to the cdr value, false otherwise!
+    */
+   bool cmp_op_equal(u64 x, u64 y)
+   {
+      return x == y;
+   }
+
+   /**
+    * This function performs odd? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is odd, false otherwise!
+    *  */
+   bool apply_op_odd(u64 x)
+   {
+      return decode_int(x) % 2 != 0;
+   }
+
+   /**
+    * This function performs even? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is even, false otherwise!
+    *  */
+   bool apply_op_even(u64 x)
+   {
+      return decode_int(x) % 2 == 0;
+   }
+
+   /**
+    * This function performs positive? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is positive, false otherwise!
+    *  */
+   bool apply_op_positive(u64 x)
+   {
+      return decode_int(x) > 0 ? 1 : 0;
+   }
+
+   /**
+    * This function performs negative? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is negative, false otherwise!
+    *  */
+   bool apply_op_negative(u64 x)
+   {
+      return decode_int(x) < 0 ? 1 : 0;
+   }
+
+   /**
     *
     * @param lst argument list (a cons cell)
     * @return true if the list is null, false otherwise!
@@ -444,6 +579,96 @@ extern "C"
          else
             return reinterpret_cast<void *>(encode_bool((s32)0));
       }
+   }
+
+   /**
+    * This function performs = operation
+    * @param lst argument list (a cons cell)
+    * @return true if car and cdr value is equal (==), false otherwise!
+    *  */
+   void *apply_prim__u61(void *lst)
+   {
+      return apply_comparison_op(lst, &cmp_op_equal); // for == operation
+   }
+
+   /**
+    * This function performs > operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is greater than the cdr value, false otherwise!
+    *  */
+   void *apply_prim__u62(void *lst)
+   {
+      return apply_comparison_op(lst, &cmp_op_greater); // for < operation
+   }
+
+   /**
+    * This function performs < operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is less than the cdr value, false otherwise!
+    *  */
+   void *apply_prim__u60(void *lst)
+   {
+      return apply_comparison_op(lst, &cmp_op_less); // for < operation
+   }
+
+   /**
+    * This function performs >= operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is greater than or equal the cdr value, false otherwise!
+    *  */
+   void *apply_prim__u62_u61(void *lst)
+   {
+      return apply_comparison_op(lst, &cmp_op_ge); // for >= operation
+   }
+
+   /**
+    * This function performs <= operation
+    * @param lst argument list (a cons cell)
+    * @return true if car is less than or equal the cdr value, false otherwise!
+    *  */
+   void *apply_prim__u60_u61(void *lst)
+   {
+      return apply_comparison_op(lst, &cmp_op_le); // for <= operation
+   }
+
+   /**
+    * This function performs odd? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is odd, false otherwise!
+    *  */
+   void *apply_prim_odd_u63(void *lst)
+   {
+      return apply_opr(lst, &apply_op_odd); // for odd? operation
+   }
+
+   /**
+    * This function performs odd? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is odd, false otherwise!
+    *  */
+   void *apply_prim_even_u63(void *lst)
+   {
+      return apply_opr(lst, &apply_op_even); // for even? operation
+   }
+
+   /**
+    * This function performs odd? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is odd, false otherwise!
+    *  */
+   void *apply_prim_positive_u63(void *lst)
+   {
+      return apply_opr(lst, &apply_op_positive); // for positive? operation
+   }
+
+   /**
+    * This function performs odd? operation
+    * @param lst one argument list (a cons cell)
+    * @return true if the value is odd, false otherwise!
+    *  */
+   void *apply_prim_negative_u63(void *lst)
+   {
+      return apply_opr(lst, &apply_op_negative); // for negative? operation
    }
 
    /**

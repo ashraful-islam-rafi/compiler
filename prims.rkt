@@ -5,8 +5,8 @@
 ; (define default-prims '(+ * = < > car cdr list null? cons length equal? eq? cdar even?))
 
 ; this one
-; (define default-prims '(* + - / expt = > < car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?)) 
-(define default-prims '(+ - * car cdr cons null? eq? equal?));  / = > < expt list equal? odd? even? positive? negative?))
+; (define default-prims '(* + - / expt = > < >= <= car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?)) 
+(define default-prims '(+ - * = > >= < <= car cdr cons null? eq? equal? odd? even? positive? negative?));  / expt list))
 
 ; (define builtins '())
 (define builtins 
