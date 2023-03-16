@@ -146,6 +146,9 @@
    '(negative? 500)
    '(negative? -500)
 
+   '(not #t)
+   '(not #f)
+
    '(let ([a '2]
           [b '3])
       (let ([a b]
@@ -232,13 +235,13 @@
 
 (define test-cases-for-final-output
   (list
-   ;  '(apply + ((lambda x x) 2 3))
+   ; '(apply + ((lambda x x) 2 3))
    ;  '(+ 1 2 (- 5 2) (+ 1 2))
    ;  '(* 2 3 (+ 3 2) (- 4 1))
    ; '(* 3)
    ;  '(- 5)
-   ;  '(cons 1 (cons 2 (cons 3 (cons 4 '()))))
-   ; '(apply + (cons 1 (cons 2 (cons 3 (cons 4 '())))))
+   ; '(cons 1 (cons 2 (cons 3 (cons 4 '()))))
+   ;  '(apply + (cons 1 (cons 2 (cons 3 (cons 4 '())))))
    ;  '(let ([a '6])
    ;     (let ([d '2])
    ;       (let ([e '3])
@@ -246,8 +249,11 @@
    ;           (let ([f (λ (a b) (c (c (+ e d a b))))])
    ;             (f 4 5))))))
    ;  '(/ 4 2) ; not implemented yet!
-   ;  '(list 2 3 (list 4 5) 6) ; not implemented yet!
-   ;  '(car '((2 3) (4 5)))
+  ;  '(list 2 3 (list 4 (list 5 6) 7) 8)
+  ;  '(reverse (list 1 2 3)) ; need to implement if first
+  '(+ (if 1 2 #f) 2)
+   ;  '(cons 1 2)
+   ; '(car '((2 3) (4 5)))
    ;  '(cdr '((2 3) (4 5)))
    ;  '(car (cdr (cdr '((2 3) (4 5) 6)))) ;=> 6
    ; '(null? '(1 2 3))
@@ -268,15 +274,16 @@
    ;  '(<= 3 2)
    ;  '(>= 3 4)
    ;  '(>= 4 4)
-  ;  '(odd? 1)
-  ;  '(odd? 2)
-  ;  '(even? 2)
-  ;  '(even? 21)
-  ;  '(positive? 500)
-  ;  '(positive? -500)
-  ;  '(negative? 500)
-   '(negative? -500)
-
+   ;  '(odd? 1)
+   ;  '(odd? 2)
+   ;  '(even? 2)
+   ;  '(even? 21)
+   ;  '(positive? 500)
+   ;  '(positive? -500)
+   ;  '(negative? 500)
+   ;  '(negative? -500)
+   ;  '(+ (if 1 2 #f) 2) ; not implemented yet! ; add in the emit-cpp case
+   ;  '(not #f)
 
    ))
 

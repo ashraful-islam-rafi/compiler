@@ -195,11 +195,10 @@
 
 
          [_ (raise (format "Unknown datatype! ~a" val))]
-         )
+         )]
 
-       ;  (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_int((s32)~a));" (get-c-string lhs) val))
-       ;  (convert-proc-body proc_env proc_arg letbody)
-       ]
+      [`(if ,grd ,texp ,fexp)
+       'todo-yet-to-implement]
 
       [`(app-clo ,func ,args)
 

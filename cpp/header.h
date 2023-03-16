@@ -14,8 +14,6 @@ using namespace std;
 
 #define NULL_VALUE 0
 #define ENV_ARRAY 1
-#define TRUE_VALUE 47   // 00101111
-#define FALSE_VALUE 55  // 00110111
 #define RANDOM_VALUE 63 // 00111111
 
 extern "C"
@@ -151,7 +149,7 @@ extern "C"
       switch (val & 7)
       {
       case NULL_VALUE:
-         cout << "()";
+         cout << "'()";
          break;
       case INT:
          cout << decode_int(val);
@@ -175,9 +173,9 @@ extern "C"
       {
          u64 *cell = decode_cons(val);
 
-         cout << "(";
+         cout << "(cons ";
          recursive_prim_print(cell[0]);
-         cout << " . ";
+         cout << " ";
          recursive_prim_print(cell[1]);
          cout << ")";
 
@@ -309,6 +307,46 @@ extern "C"
          cout << "Error in apply_prim_cons: argument length is greater than 2.";
 
       return prim_cons(val1, val2);
+   }
+
+   /**
+    *
+    * @param lst argument list
+    * @return a list represented by cons cells created from argument list
+    *  */
+   void *apply_prim_list(void *lst)
+   {
+      // checking if lst is empty
+      if (lst == NULL_VALUE)
+         return NULL_VALUE;
+
+      // geting the first element
+      void *val = prim_car(lst);
+      // geting the rest of the list
+      void *rest = prim_cdr(lst);
+
+      // checking if the first element is a cons cell
+      if ((reinterpret_cast<u64>(val) & 7) == CONS)
+      {
+         // cout<<"when cons...";
+         // print_val(val);
+
+         // making recursive call to handle the nested list
+         void *nested_list = apply_prim_list(val);
+         void *nested_rest = apply_prim_list(rest);
+
+         return prim_cons(nested_list, nested_rest);
+      }
+      else
+      {
+         // handling the case, when it's not a cons cell
+         // cout<<"when not-cons...";
+         // print_val(val);
+
+         void *new_val = val;
+         void *new_rest = apply_prim_list(rest);
+         return prim_cons(new_val, new_rest);
+      }
    }
 
    /**
@@ -642,9 +680,9 @@ extern "C"
    }
 
    /**
-    * This function performs odd? operation
+    * This function performs even? operation
     * @param lst one argument list (a cons cell)
-    * @return true if the value is odd, false otherwise!
+    * @return true if the value is even, false otherwise!
     *  */
    void *apply_prim_even_u63(void *lst)
    {
@@ -652,9 +690,9 @@ extern "C"
    }
 
    /**
-    * This function performs odd? operation
+    * This function performs positive? operation
     * @param lst one argument list (a cons cell)
-    * @return true if the value is odd, false otherwise!
+    * @return true if the value is positive, false otherwise!
     *  */
    void *apply_prim_positive_u63(void *lst)
    {
@@ -662,9 +700,9 @@ extern "C"
    }
 
    /**
-    * This function performs odd? operation
+    * This function performs negative? operation
     * @param lst one argument list (a cons cell)
-    * @return true if the value is odd, false otherwise!
+    * @return true if the value is negative, false otherwise!
     *  */
    void *apply_prim_negative_u63(void *lst)
    {

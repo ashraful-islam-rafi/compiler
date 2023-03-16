@@ -2,26 +2,12 @@
 
 (provide default-prims prims? builtins Ycomb)
 
-; (define default-prims '(+ * = < > car cdr list null? cons length equal? eq? cdar even?))
-
 ; this one
-; (define default-prims '(* + - / expt = > < >= <= car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?)) 
-(define default-prims '(+ - * = > >= < <= car cdr cons null? eq? equal? odd? even? positive? negative?));  / expt list))
+; (define default-prims '(* + - / expt = > < >= <= car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?))
+(define default-prims '(+ - * = > >= < <= car cdr cons list null? eq? equal? odd? even? positive? negative?));  / expt list))
 
 ; (define builtins '())
-(define builtins 
-  `(
-    (Ycomb ((λ (x) (x x))
-            (λ (g) (λ (f)
-                     (f (λ vs
-                          (apply ((g g) f) vs)))))))
-
-    (halt
-     (λ args
-       (apply-prim halt args)))
-  ))
-
-#;(define builtins 
+(define builtins
   `(
     (Ycomb ((λ (x) (x x))
             (λ (g) (λ (f)
@@ -39,92 +25,117 @@
            (cons (car lhs)
                  (append1 (cdr lhs) rhs)))))
 
-    (map1
-     (λ (op lst)
-       (if (null? lst)
-           '()
-           (cons (op (car lst))
-                 (map1 op (cdr lst))))))
-    (map
-     (λ (op lst1 . list-of-lists)
-       (let ([combined_lst (cons lst1 list-of-lists)])
-         (if (null? (car combined_lst))
-             '()
-             (cons (apply op (map1 car combined_lst))
-                   (apply map (cons op (map1 cdr combined_lst))))))))
-
-    (ormap
-     (λ (op . lst)
-       (let loop ([lst lst])
-         (cond [(or (null? lst)
-                    (null? (car lst)))
-                #f]
-
-               [(= 0 (length (cdar lst)))
-                (apply op (map1 car lst))]
-
-               [(equal? #f (not (apply op (map1 car lst))))
-                (apply op (map1 car lst))]
-
-               [else
-                (loop (map1 cdr lst))]))))
-
-    (andmap
-     (λ (op . lst)
-       (let loop ([lst lst])
-         (cond [(or (null? lst)
-                    (null? (car lst)))
-                #t]
-
-               [(= 0 (length (cdar lst)))
-                (apply op (map1 car lst))]
-
-               [(equal? #f (apply op (map1 car lst)))
-                #f]
-
-               [else
-                (loop (map1 cdr lst))]))))
-
-    (foldr
-     (λ (f acc . lsts)
-       (if (ormap null? lsts)
-           acc
-           (let* ([xs (map1 car lsts)]
-                  [rsts (map1 cdr lsts)]
-                  [acc+ (apply foldr `(,f ,acc ,@rsts))]
-                  )
-             (apply f (append1 xs `(,acc+)))
-             ))))
-
-    (foldl
-     (λ (f acc . lsts)
-       (if (ormap null? lsts)
-           acc
-           (let* ([xs (map1 car lsts)]
-                  [rsts (map1 cdr lsts)]
-                  [acc+ (apply f (append1 xs `(,acc)))])
-             (apply foldl `(,f ,acc+ ,@rsts))
-             ))))
-
     (reverse
      (λ (lst)
        (if (null? lst)
            lst
            (append1 (reverse (cdr lst)) `(,(car lst))))))
-
-
-    (append
-     (λ (xs . x)
-       (foldl append1 '() (reverse (append1 `(,xs) x)))))
-
-    (filter
-     (λ (op lst)
-       (cond [(null? lst) '()]
-             [(op (car lst))
-              (cons (car lst) (filter op (cdr lst)))]
-             [else (filter op (cdr lst))])))
-
     ))
+
+#;(define builtins
+    `(
+      (Ycomb ((λ (x) (x x))
+              (λ (g) (λ (f)
+                       (f (λ vs
+                            (apply ((g g) f) vs)))))))
+
+      (halt
+       (λ args
+         (apply-prim halt args)))
+
+      (append1
+       (λ (lhs rhs)
+         (if (null? lhs)
+             rhs
+             (cons (car lhs)
+                   (append1 (cdr lhs) rhs)))))
+
+      (map1
+       (λ (op lst)
+         (if (null? lst)
+             '()
+             (cons (op (car lst))
+                   (map1 op (cdr lst))))))
+      (map
+       (λ (op lst1 . list-of-lists)
+         (let ([combined_lst (cons lst1 list-of-lists)])
+           (if (null? (car combined_lst))
+               '()
+               (cons (apply op (map1 car combined_lst))
+                     (apply map (cons op (map1 cdr combined_lst))))))))
+
+      (ormap
+       (λ (op . lst)
+         (let loop ([lst lst])
+           (cond [(or (null? lst)
+                      (null? (car lst)))
+                  #f]
+
+                 [(= 0 (length (cdar lst)))
+                  (apply op (map1 car lst))]
+
+                 [(equal? #f (not (apply op (map1 car lst))))
+                  (apply op (map1 car lst))]
+
+                 [else
+                  (loop (map1 cdr lst))]))))
+
+      (andmap
+       (λ (op . lst)
+         (let loop ([lst lst])
+           (cond [(or (null? lst)
+                      (null? (car lst)))
+                  #t]
+
+                 [(= 0 (length (cdar lst)))
+                  (apply op (map1 car lst))]
+
+                 [(equal? #f (apply op (map1 car lst)))
+                  #f]
+
+                 [else
+                  (loop (map1 cdr lst))]))))
+
+      (foldr
+       (λ (f acc . lsts)
+         (if (ormap null? lsts)
+             acc
+             (let* ([xs (map1 car lsts)]
+                    [rsts (map1 cdr lsts)]
+                    [acc+ (apply foldr `(,f ,acc ,@rsts))]
+                    )
+               (apply f (append1 xs `(,acc+)))
+               ))))
+
+      (foldl
+       (λ (f acc . lsts)
+         (if (ormap null? lsts)
+             acc
+             (let* ([xs (map1 car lsts)]
+                    [rsts (map1 cdr lsts)]
+                    [acc+ (apply f (append1 xs `(,acc)))])
+               (apply foldl `(,f ,acc+ ,@rsts))
+               ))))
+
+      (reverse
+       (λ (lst)
+         (if (null? lst)
+             lst
+             (append1 (reverse (cdr lst)) `(,(car lst))))))
+
+
+      (append
+       (λ (xs . x)
+         (foldl append1 '() (reverse (append1 `(,xs) x)))))
+
+      (filter
+       (λ (op lst)
+         (cond [(null? lst) '()]
+               [(op (car lst))
+                (cons (car lst) (filter op (cdr lst)))]
+               [else (filter op (cdr lst))])))
+
+      ))
 
 (define (prims? op)
   (if (member op default-prims)
