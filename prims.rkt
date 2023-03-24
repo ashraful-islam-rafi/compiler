@@ -4,35 +4,10 @@
 
 ; this one
 ; (define default-prims '(* + - / expt = > < >= <= car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?))
-(define default-prims '(+ - * = > >= < <= car cdr cons list null? eq? equal? odd? even? positive? negative?));  / expt list))
+(define default-prims '(+ - * = > >= < <= car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?))
 
-; (define builtins '())
+
 (define builtins
-  `(
-    (Ycomb ((λ (x) (x x))
-            (λ (g) (λ (f)
-                     (f (λ vs
-                          (apply ((g g) f) vs)))))))
-
-    (halt
-     (λ args
-       (apply-prim halt args)))
-
-    (append1
-     (λ (lhs rhs)
-       (if (null? lhs)
-           rhs
-           (cons (car lhs)
-                 (append1 (cdr lhs) rhs)))))
-
-    (reverse
-     (λ (lst)
-       (if (null? lst)
-           lst
-           (append1 (reverse (cdr lst)) `(,(car lst))))))
-    ))
-
-#;(define builtins
     `(
       (Ycomb ((λ (x) (x x))
               (λ (g) (λ (f)

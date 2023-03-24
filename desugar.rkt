@@ -107,7 +107,7 @@
 
      (match-define (cons req opt) (extract-params improper-args))
 
-     (define arg-x (gensym `param-lst))
+     (define arg-x (gensym `param_lst))
 
      (define (simplify-lambda arg-x req opt body)
        (let loop ([req req])

@@ -36,7 +36,7 @@
                        (cond
                          [(null? args) (simplify-λ elam)]
                          [else
-                          (define newarg (gensym 'arg-lst))
+                          (define newarg (gensym 'arg_lst))
                           `(let ([,(car args) (prim car ,arglst)])
                              (let ([,newarg (prim cdr ,arglst)])
                                ,(loop (cdr args) newarg)))])))])
@@ -310,49 +310,8 @@
      (* 2 5)))
 ; (pretty-print (closure-convert example3))
 
-(define example4
-  '(let ((*
-          (λ args
-            (let ((kkont3042 (prim car args)))
-              (let ((args (prim cdr args)))
-                (let ((prm3043 (apply-prim * args)))
-                  (kkont3042 '() prm3043)))))))
-     (let ((+
-            (λ args
-              (let ((kkont3044 (prim car args)))
-                (let ((args (prim cdr args)))
-                  (let ((prm3045 (apply-prim + args)))
-                    (kkont3044 '() prm3045)))))))
-       ((λ (kont3051 x) (x kont3051 x))
-        (λ (letk3046 Ycomb)
-          (Ycomb
-           (λ (letk3047 halt) (+ halt 2 3))
-           (λ (kont3048 halt)
-             (kont3048
-              '()
-              (λ args
-                (let ((kkont3049 (prim car args)))
-                  (let ((args (prim cdr args)))
-                    (let ((prm3050 (apply-prim halt args)))
-                      (kkont3049 '() prm3050)))))))))
-        #;(λ (kont3052 g)
-            (kont3052
-             '()
-             (λ (kont3053 f)
-               (f
-                kont3053
-                (λ vs
-                  (let ((kkont3054 (prim car vs)))
-                    (let ((vs (prim cdr vs)))
-                      (g
-                       (λ (letk3055 t3040)
-                         (t3040
-                          (λ (letk3056 t3041)
-                            (let ((lst3057 (prim cons kkont3054 vs)))
-                              (apply t3041 lst3057)))
-                          f))
-                       g)))))))))
-       )))
+
+(define example4 '(if '1 '2 #f))
 ; (pretty-print (closure-convert example4))
 
 
@@ -362,7 +321,7 @@
 ; (pretty-print (anf-convert (desugar (add-prims-to-prog example))))
 ; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog example)))))
 ; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog example))))))
-; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog example))))))
+; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog example4))))))
 ; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 3))))))
 
 

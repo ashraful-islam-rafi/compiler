@@ -200,36 +200,6 @@ extern "C"
    }
 
    /**
-    * This function prints the value and and halt
-    * @param v value we are trying to print
-    * @return void
-    */
-   void *print_and_halt(void *v)
-   {
-      u64 val = reinterpret_cast<u64>(v);
-      switch (val & 7)
-      {
-      case CONS:
-      {
-         u64 *cell = decode_cons(val);
-         cout << "'(";
-         recursive_prim_print(cell[0]);
-         cout << " . ";
-         recursive_prim_print(cell[1]);
-         cout << ")";
-         exit(0);
-         return NULL_VALUE;
-      }
-      default:
-      {
-         cout << "Error: expected a cons cell!" << endl;
-         exit(0);
-         return NULL_VALUE;
-      }
-      }
-   }
-
-   /**
     * @return NULL_VALUE that is 0
     */
    void *encode_null()
@@ -391,6 +361,26 @@ extern "C"
       {
          u64 *cell = decode_cons(temp_lst);
          return prim_cdr(reinterpret_cast<void *>(cell[0]));
+      }
+   }
+
+   /**
+    *
+    * @param lst argument list (a cons cell)
+    * @return the cdr value of car of that cell
+    *  */
+   void* apply_prim_cdar(void* lst){
+      u64 temp_lst = reinterpret_cast<u64>(lst);
+
+      if ((temp_lst & 7) != CONS)
+      {
+         cout << "Error in apply_prim_cdar: expected a cons cell!" << endl;
+         exit(0);
+      }
+      else
+      {
+         u64 *cell = decode_cons(temp_lst);
+         return prim_cdr(prim_car(reinterpret_cast<void *>(cell[0])));
       }
    }
 
@@ -803,11 +793,34 @@ extern "C"
 
          result -= decode_int(temp_cell[0]);
 
-         cout << "result: " << result << endl;
          cdr = temp_cell[1];
       }
 
       return reinterpret_cast<void *>(encode_int((s32)result));
+   }
+
+   /* helper function to count the length of a list */
+   int length_counter(void* lst){
+      // print_val(lst);
+
+      if (lst == NULL_VALUE)
+         return 0;   
+
+      void *val = prim_car(lst);
+      void *rest = prim_cdr(lst);
+
+      if ((reinterpret_cast<u64>(val) & 7) == CONS)
+         return length_counter(val) + length_counter(rest);
+      else
+         return 1 + length_counter(rest);
+   }
+   /**
+    * @param lst is a list
+    * @return the length of the list
+    */
+   void* apply_prim_length(void *lst)
+   {
+      return reinterpret_cast<void *>(encode_int((s32)length_counter(prim_car(lst))));
    }
 
    /**
@@ -920,6 +933,19 @@ extern "C"
       u64 *clo_obj = decode_clo(obj);
 
       return reinterpret_cast<void *>(clo_obj[0]);
+   }
+
+   /**
+    * @param val the value we are going to check
+    * @return true, if the value is not false
+    */
+   void *is_true(void *val)
+   {
+      u64 obj = reinterpret_cast<u64>(val);
+      if (decode_bool(obj) == 0)
+         return reinterpret_cast<void *>(0);
+      else
+         return reinterpret_cast<void *>(1);
    }
 
    /**

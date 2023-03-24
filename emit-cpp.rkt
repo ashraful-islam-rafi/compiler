@@ -72,6 +72,7 @@
 
   (define (convert-proc-body proc_env proc_arg body)
     ;(displayln (~a "cpb: " body))
+    (define (true? x) (if x #t #f))
     (define (get-c-string s) (string->symbol (convert-id-to-c s)))
 
     (match body
@@ -83,8 +84,13 @@
           (convert-proc-body proc_env proc_arg letbody)]
 
          [(? boolean? )
-          (append-line filename (format "void* ~a = encode_boolean(~a);" (get-c-string lhs) val))
-          (convert-proc-body proc_env proc_arg letbody)]
+          (cond [(true? val)
+                 (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_bool((s32)~a));" (get-c-string lhs) 1))
+                 (convert-proc-body proc_env proc_arg letbody)]
+                [else
+                 (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_bool((s32)~a));" (get-c-string lhs) 0))
+                 (convert-proc-body proc_env proc_arg letbody)
+                 ])]
 
          [(? null? )
           (append-line filename (format "void* ~a = encode_null();" (get-c-string lhs)))
@@ -176,8 +182,13 @@
           (convert-proc-body proc_env proc_arg letbody)]
 
          [(? boolean? )
-          (append-line filename (format "void* ~a = encode_boolean(~a);" (get-c-string lhs) val))
-          (convert-proc-body proc_env proc_arg letbody)]
+          (cond [(true? val)
+                 (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_bool((s32)~a));" (get-c-string lhs) 1))
+                 (convert-proc-body proc_env proc_arg letbody)]
+                [else
+                 (append-line filename (format "void* ~a = reinterpret_cast<void *>(encode_bool((s32)~a));" (get-c-string lhs) 0))
+                 (convert-proc-body proc_env proc_arg letbody)
+                 ])]
 
          [(? null? )
           (append-line filename (format "void* ~a = encode_null();" (get-c-string lhs)))
@@ -198,7 +209,35 @@
          )]
 
       [`(if ,grd ,texp ,fexp)
-       'todo-yet-to-implement]
+       (append-line filename "\n//if-clause")
+       (define guard (gensym 'if_guard))
+
+       (append-line filename (format "u64 ~a = reinterpret_cast<u64>(is_true(~a));" guard grd))
+       (append-line filename (format "if(~a == 1)\n{" guard))
+       (convert-proc-body proc_env proc_arg texp)
+       (append-line filename "}\nelse\n{")
+       (convert-proc-body proc_env proc_arg fexp)
+       (append-line filename "}\n")
+       ]
+
+      [`(not ,exp)
+       (convert-proc-body proc_env proc_arg `(if ,exp #f #t))]
+
+      [`(and) (convert-proc-body proc_env proc_arg #t)]
+      [`(and ,e0) (convert-proc-body proc_env proc_arg e0)]
+      [`(and ,e0 ,es ...)
+       (convert-proc-body proc_env proc_arg `(if ,e0 (and ,@es) #f))]
+
+      [`(or) (convert-proc-body proc_env proc_arg #f)]
+      [`(or ,e0) (convert-proc-body proc_env proc_arg e0)]
+      [`(or ,e0 ,es ...)
+       (define temp (gensym 'or))
+       (convert-proc-body proc_env proc_arg
+                          `(let ([,temp ,e0])
+                             (if ,temp ,temp (or ,@es))))]
+
+      [`(call/cc ,e0)
+       	(convert-proc-body proc_env proc_arg e0)]
 
       [`(app-clo ,func ,args)
 
@@ -234,8 +273,8 @@
     (append-line filename func_name)
 
     ; uncomment these two lines for debugging!
-    (append-line filename (format "cout<<\"In ~a\";" ptr))
-    (append-line filename (format "print_val(~a);\n" arg))
+    ; (append-line filename (format "cout<<\"In ~a\";" ptr))
+    ; (append-line filename (format "print_val(~a);\n" arg))
 
     (convert-proc-body env arg body)
 
@@ -263,7 +302,7 @@
 
 ; (define prog4 '(apply + ((lambda x x) 2 3)))
 ; (define prog '(+ 1 2 (- 3 5)))
-; (define prog3 '(- 5))
+(define prog3 '(list 2 3 (list 4 (list 5 6) 7) 8))
 ; (define prog2
 ;   '(let ([a 6])
 ;      (let ([d 2])
@@ -275,7 +314,7 @@
 ; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
 ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
 ; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog4))))))
-; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
+; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
 ; ;(pretty-print clo_converted_prog)
 
 
