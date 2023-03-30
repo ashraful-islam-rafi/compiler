@@ -88,7 +88,7 @@
 
        (when (> (+ arglength 1) 1) (append-line filename "\n//setting env list"))
 
-       (for/list ([i (in-range 1 (+ arglength 1))]
+       (for ([i (in-range 1 (+ arglength 1))]
                   [item args])
 
          (append-line

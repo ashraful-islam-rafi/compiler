@@ -258,30 +258,3 @@
           (λ (reverse)
             (λ (lst) (if (null? lst) lst (append1 (reverse (cdr lst)) `(,(car lst)))))))))
     (reverse (list 1 2 3)))
-
-
-
-#;(let ((ormap
-         (Ycomb2
-          (λ (ormap)
-            (λ (op . lst)
-              (let loop ((lst lst))
-                (let ((t981578
-                       (let ((or981558 (null? lst)))
-                         (if or981558 or981558 (let ((t981577 (car lst))) (null? t981577))))))
-                  (if t981578
-                      false
-                      (let ((t981579 (cdar lst)))
-                        (let ((t981580 (length t981579)))
-                          (let ((t981581 (= 0 t981580)))
-                            (if t981581
-                                (let ((t981582 (map car lst))) (apply op t981582))
-                                (let ((t981583 (map car lst)))
-                                  (let ((t981584 (apply op t981583)))
-                                    (let ((t981585 (if t981584 #f #t)))
-                                      (let ((t981586 (equal? false t981585)))
-                                        (if t981586
-                                            (let ((t981587 (map car lst))) (apply op t981587))
-                                            (let ((t981588 (map cdr lst)))
-                                              (loop t981588)))))))))))))))))))
-    (ormap + '(1 2 3) '(4 5 6) '(7 8 9)))

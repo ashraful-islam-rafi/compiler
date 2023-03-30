@@ -13,12 +13,7 @@
 (define cpp_file (format "~a~a" cpp_folder_path cpp_file_name))
 (define bin_file (format "~a~a" cpp_folder_path bin_file_name))
 
-;;;;;;; Run to see Final Output
-; incomplete
-; how do I run each case, which generates a cpp file, runs it,
-; and then print the output and move to the next case and repeat!!!
-;==============================
-
+;; Test cases
 (define test-cases-for-final-output
   (list
    '(+ 1 2 3 (- 5 2) (+ 1 2))
@@ -41,7 +36,7 @@
    '(equal? 200 100)
    '(equal? (* 6 7) 42)
    '(equal? 'yes 'no)
-   (equal? "yes" "yes")
+   '(equal? "yes" "yes")
 
    '(= 3 4)
    '(= 4 4)
@@ -116,12 +111,43 @@
    '(apply (lambda (a b c) b) (list 1 2 3))
    '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
    '(apply + (cons 1 (cons 2 (cons 3 (cons 4 '())))))
-
    ))
 
-;; Run all the test cases to emit c++, 
+;; Runs all the test cases to emit c++,
 ;; then executes the binary and prints out the final output
-(for-each
+(for ([i (in-range 1 (+ 1 (length test-cases-for-final-output)))]
+           [prog test-cases-for-final-output])
+
+  (define prog+ (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
+  ;  (pretty-print prog+)
+
+  (define (execute-prog+ prog+)
+    ; generating the cpp_program.cpp file
+    (emit-cpp prog+)
+
+    (cond
+      [(system (format "~a ~a ~a ~a" "g++" cpp_file "-o" bin_file))
+       ;; compilation successful, now let's execute the binary file now
+       (define-values (sp out in err) (subprocess #f #f #f (format "./cpp/~a" bin_file_name)))
+
+       ;; printing final output
+       (displayln (port->string out))
+
+       ;; closing all the ports
+       (close-input-port out)
+       (close-output-port in)
+       (close-input-port err)
+
+       ;; wait till the process terminates
+       (subprocess-wait sp)]
+
+      [else (raise `(Error: could not create and execute the binary file!))]))
+
+  (displayln (~a (format "case ~a: " i) prog))
+  (display "output:")
+  (execute-prog+ prog+))
+
+#;(for-each
 
  (λ (prog)
    (define prog+ (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
@@ -133,9 +159,9 @@
 
      (cond
        [(system (format "~a ~a ~a ~a" "g++" cpp_file "-o" bin_file))
-        ;; compilation successful, now let's execute the binary file and print the output
+        ;; compilation successful, now let's execute the binary file now
         (define-values (sp out in err) (subprocess #f #f #f (format "./cpp/~a" bin_file_name)))
-        
+
         ;; printing final output
         (displayln (port->string out))
 
