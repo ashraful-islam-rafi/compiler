@@ -141,7 +141,7 @@
        ;; wait till the process terminates
        (subprocess-wait sp)]
 
-      [else (raise `(Error: could not create and execute the binary file!))]))
+      [else (raise `(Error occured while emitting c++ and executing the binary file!))]))
 
   (displayln (~a (format "case ~a: " i) prog))
   (display "output:")
