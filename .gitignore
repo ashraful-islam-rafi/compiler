@@ -4,3 +4,4 @@ compiled
 **/*.rkt~
 **/*.bak
 cpp/cpp_program
+cpp/cpp_program.out
