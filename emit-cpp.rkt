@@ -1,61 +1,10 @@
 #lang racket
 
-(require    "utilities.rkt"
-            "closure-convert.rkt"
-            "cps-convert.rkt"
-            "anf-convert.rkt"
-            "desugar.rkt")
+(require "utilities.rkt")
 
 (provide emit-cpp)
 
 (define filename "cpp/cpp_program.cpp")
-
-; test program
-(define (test-program)
-  (define test_prog
-    (string-append "int main() {
-        
-        int value = 1001;
-        void* encodedInt = encodeInt(value); 
-        int decodedInt = decodeInt(encodedInt);
-        cout <<" "\"Encoded int value: \"" "<< encodedInt << endl;
-        cout <<" "\"Decoded int value: \"" "<< decodedInt << endl;
-
-        bool bvalue = true;
-        void* encodedBool = encodeBool(bvalue);
-        bool decodedBool = decodeBool(encodedBool);
-        cout <<" "\"Encoded boolean value: \"" "<< encodedBool << endl;
-        cout <<" "\"Decoded boolean value: \"" "<< decodedBool << endl;
-
-        string svalue =" "\"is this working?\""";
-        void* encodedString = encodeString(svalue);
-        string decodedString = decodeString(encodedString);
-        cout <<" "\"Encoded string value: \"" "<< encodedString << endl;
-        cout <<" "\"Decoded string value: \"" "<<decodedString << endl;
-
-    }"))
-
-
-  ; starting the program by replacing the old file, if exists
-  (append-line filename "#include<stdio.h>" 'replace)
-  (append-line filename "#include<string.h>" )
-  (append-line filename "#include<iostream>" )
-  (append-line filename (string-append "#include " "\"header.h\""))
-  (append-line filename "\nusing namespace std;\n" )
-
-
-  (append-line filename test_prog)
-
-  ; (define lst2 '(1 2 3 4 5 6 7 8  10))
-  ; (append-list-to-file filename lst2)
-
-  ; printing end of the program
-  (define line "\n// end of program")
-  (append-line filename line)
-  )
-;(test-program)
-
-
 
 (define (emit-cpp proc_list)
 
@@ -66,7 +15,7 @@
   (append-line filename (string-append "#include " "\"header.h\""))
   (append-line filename "using namespace std;\n" )
 
-  ; (pretty-display proc_list)
+  ;(pretty-display proc_list)
   ;(pretty-display main_proc)
   ;(pretty-display other_procs)
 
@@ -108,7 +57,6 @@
 
          [_ (raise (format "Unknown datatype! ~a" val))]
          )
-
        ]
 
       [`(let ([,lhs (new-closure ,ptr ,args ...)]) ,letbody)
@@ -251,9 +199,7 @@
        (append-line filename "\n//calling next proc using a function pointer")
        (append-line filename (format "auto function_ptr = reinterpret_cast<void (*)(void *, void *)>(~a);" procPtr))
        (append-line filename (format "function_ptr(~a, ~a);" procEnv args))
-
        ]
-
       ))
 
   (define (convert-procs proc)
@@ -296,28 +242,6 @@
   (append-line filename "}\n")
   ;end of main function.
 
-
   'cpp-emission-done!)
-
-
-; (define prog4 '(apply + ((lambda x x) 2 3)))
-; (define prog '(+ 1 2 (- 3 5)))
-(define prog3 '(list 2 3 (list 4 (list 5 6) 7) 8))
-; (define prog2
-;   '(let ([a 6])
-;      (let ([d 2])
-;        (let ([e '3])
-;          (let ([c (λ (x) (+ x a d))])
-;            (let ([f (λ (a b) (c (c (+ e d a b))))])
-;              (f 4 5)))))))
-
-; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
-; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog2))))))
-; ; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog4))))))
-; (define clo_converted_prog (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog3))))))
-; ;(pretty-print clo_converted_prog)
-
-
-; (emit-cpp clo_converted_prog)
 
 ; fix-bug for '() program!

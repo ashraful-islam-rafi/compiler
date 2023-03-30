@@ -7,8 +7,8 @@
   (define (build-sexp-list lst)
     (let ([token (lex prog)])
       (begin
-        ;(displayln (~a "token: " token))
-        ;(displayln (~a "list-so-far: " lst))
+        (displayln (~a "token: " token))
+        (displayln (~a "list-so-far: " lst))
         (cond
           [(null? token) lst]
           [else
@@ -48,7 +48,7 @@
                 ['|<| (build-sexp-list (cons '< lst))]
                 ['|<=| (build-sexp-list (cons '<= lst))]
                 ['|=| (build-sexp-list (cons '= lst))]
-                ;['|'| (build-sexp-list lst)]
+                ['|'| (build-sexp-list lst)]
                 
                 )]
 
@@ -64,5 +64,6 @@
     (build-sexp-list '())))
 
 ; test parser
-;(parse (open-input-string "(let ([a '6] [b '8]) a)"))
+; (parse (open-input-string "(let ([a '6] [b '8]) a)"))
+; (parse (open-input-string "(car '((2 3) (4 5)))"))
 ;(parse (open-input-string "(quote (1 2 . (3)))"))

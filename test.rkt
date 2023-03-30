@@ -307,20 +307,20 @@
    ;  '(let* ([a 3] [b (* 2 a)]) (cons a b))
    ;  '(letrec ([fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))]) (fact 5))
 
-  ;  '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t)
-   '(call/cc
-     (λ (top)
-       (let ((cc (call/cc (λ (cc) (cc cc)))))
-         (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
-             #t
-             #t))))
+   ;  '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t)
+   ;  '(call/cc
+   ;    (λ (top)
+   ;      (let ((cc (call/cc (λ (cc) (cc cc)))))
+   ;        (if (call/cc (λ (k) (if (cc (lambda (x) (top #f))) (k #f) (k #f))))
+   ;            #t
+   ;            #t))))
 
 
    ;  '(filter even? (list 1 2 3 4))
    ;  '(reverse (list 1 2 3))
 
    ;  '(append1 (list 1 2) (list 3 4))
-   ;  '(append (list 1 2) (list 3 4) (list 5 7))
+   '(append (list 1 2) (list 3 4) (list 5 7))
 
    ;  '(foldl + 0 (list 1 2 3))
    ;  '(foldr + 0 (list 1 2 3))
@@ -332,8 +332,8 @@
    ; '(apply + ((lambda x x) 2 3))
    ;  '(apply + (list 1 3 4))
    ;  '(apply (lambda (a b c) b) (list 1 2 3))
-   ;  '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
-   ;  '(apply + (cons 1 (cons 2 (cons 3 (cons 4 '())))))
+   ; '(apply + (let* ([a 3] [b (* 2 a)]) (list a b)))
+   ; '(apply + (cons 1 (cons 2 (cons 3 (cons 4 '())))))
 
    ))
 

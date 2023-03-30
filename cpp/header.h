@@ -97,48 +97,6 @@ extern "C"
       return (((u64)(v)) | ENV);
    }
 
-   /* --- old encoding-decoding----
-   s32 decode_int(u64 v)
-   {
-      return (s32)(v >> 32);
-   }
-
-   u64 encode_int(s32 v)
-   {
-      return ((u64)v << 32) | INT;
-   }
-
-   u64 *decode_cons(u64 v)
-   {
-      return (u64 *)(v & ~CONS);
-   }
-
-   u64 encode_cons(u64 *v)
-   {
-      return (((u64)(v)) | CONS);
-   }
-
-   u64 *decode_clo(u64 v)
-   {
-      return (u64 *)(v & ~CLO);
-   }
-
-   u64 encode_clo(u64 *v)
-   {
-      return (((u64)(v)) | CLO);
-   }
-
-   u64 *decode_env_arr(u64 v)
-   {
-      return (u64 *)(v & ~ENV);
-   }
-
-   u64 encode_env_arr(u64 *v)
-   {
-      return (((u64)(v)) | ENV);
-   }
- */
-
    /**
     * This function recursively prints a give value
     * @param val value we are trying to print
@@ -956,7 +914,7 @@ extern "C"
    void *apply_prim_halt(void *arglist)
    {
       // cout << "In apply_prim_halt: ";
-      cout << "Final return value:";
+      // cout << "Final return value:";
 
       // u64 value = reinterpret_cast<u64>(prim_car(arglist));
       // cout<< (value & 7) <<endl;
