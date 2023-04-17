@@ -116,7 +116,7 @@
 ;; Runs all the test cases to emit c++,
 ;; then executes the binary and prints out the final output
 (for ([i (in-range 1 (+ 1 (length test-cases-for-final-output)))]
-           [prog test-cases-for-final-output])
+      [prog test-cases-for-final-output])
 
   (define prog+ (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
   ;  (pretty-print prog+)
@@ -141,43 +141,8 @@
        ;; wait till the process terminates
        (subprocess-wait sp)]
 
-      [else (raise `(Error occured while emitting c++ and executing the binary file!))]))
+      [else (raise `(Error occured while emitting c++!))]))
 
   (displayln (~a (format "case ~a: " i) prog))
   (display "output:")
   (execute-prog+ prog+))
-
-#;(for-each
-
- (λ (prog)
-   (define prog+ (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog prog))))))
-   ;  (pretty-print prog+)
-
-   (define (execute-prog+ prog+)
-     ; generating the cpp_program.cpp file
-     (emit-cpp prog+)
-
-     (cond
-       [(system (format "~a ~a ~a ~a" "g++" cpp_file "-o" bin_file))
-        ;; compilation successful, now let's execute the binary file now
-        (define-values (sp out in err) (subprocess #f #f #f (format "./cpp/~a" bin_file_name)))
-
-        ;; printing final output
-        (displayln (port->string out))
-
-        ;; closing all the ports
-        (close-input-port out)
-        (close-output-port in)
-        (close-input-port err)
-
-        ;; wait till the process terminates
-        (subprocess-wait sp)]
-
-       [else (raise `(Error: could not create and execute the binary file!))]))
-
-   (displayln (~a "case   : " prog))
-   (display "output :")
-   (execute-prog+ prog+)
-   )
-
- test-cases-for-final-output)

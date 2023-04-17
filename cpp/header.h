@@ -56,9 +56,10 @@ extern "C"
 
    string decode_string(u64 v)
    {
-      string *decoded = ((string *)MASK(v));
+      // string *decoded = ((string *)MASK(v));
+      string *decoded = reinterpret_cast<string *>(MASK(v));
       string str = *decoded;
-      // delete decoded;
+      delete decoded;
       return str;
    }
 
@@ -95,6 +96,23 @@ extern "C"
    u64 encode_env_arr(u64 *v)
    {
       return (((u64)(v)) | ENV);
+   }
+
+   /**
+    * This function takes a bool flag which is either 0 and 1 and
+    * decides weather to continue running the program or exit the program
+    *    if 0, the assertion is failed and we exit out of the program
+    *    otherwise, we do nothing!
+    * @param cond condition, either 0 or 1
+    * @return void
+    */
+   void assert(bool cond, const char *msg)
+   {
+      if (!cond)
+      {
+         cout << "Assertion failed-> " << msg << endl;
+         exit(1);
+      }
    }
 
    /**
@@ -192,11 +210,18 @@ extern "C"
    {
       u64 ptr = reinterpret_cast<u64>(val);
 
-      if ((ptr & 7) != CONS)
-      {
-         cout << "Error in prim_car: expected a cons cell!" << endl;
-         exit(0);
-      }
+      // cout<< "tag: " << (ptr & 7)<<endl;
+      // cout<< "first chk: " << ((ptr & 7) == CONS) <<endl;
+
+      // if ((ptr & 7) != CONS)
+      // {
+      //    cout << "Error in prim_car: expected a cons cell!" << endl;
+      //    exit(1);
+      // }
+
+      // cout<< "second chk: " << ((ptr & 7) == CONS) <<endl;
+
+      assert((ptr & 7) == CONS, "Error in prim_car: expected a cons cell!");
 
       u64 *cell = decode_cons(ptr);
       return reinterpret_cast<void *>(cell[0]);
@@ -211,11 +236,7 @@ extern "C"
    {
       u64 ptr = reinterpret_cast<u64>(val);
 
-      if ((ptr & 7) != CONS)
-      {
-         cout << "Error in prim_cdr: expected a cons cell!" << endl;
-         exit(0);
-      }
+      assert((ptr & 7) == CONS, "Error in prim_cdr: expected a cons cell!");
 
       u64 *cell = decode_cons(ptr);
       return reinterpret_cast<void *>(cell[1]);
@@ -231,8 +252,8 @@ extern "C"
       void *val1 = prim_car(lst);
       void *val2 = prim_car(prim_cdr(lst));
 
-      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
-         cout << "Error in apply_prim_cons: argument length is greater than 2.";
+      assert(prim_cdr(prim_cdr(lst)) == NULL_VALUE,
+             "Error in apply_prim_cons: argument length is greater than 2!");
 
       return prim_cons(val1, val2);
    }
@@ -244,9 +265,15 @@ extern "C"
     *  */
    void *apply_prim_list(void *lst)
    {
+      // cout << "In apply_prim_list";
+      // print_val(lst);
+
       // checking if lst is empty
       if (lst == NULL_VALUE)
+      {
+         // cout<< "in null case"<<endl;
          return NULL_VALUE;
+      }
 
       // geting the first element
       void *val = prim_car(lst);
@@ -256,7 +283,7 @@ extern "C"
       // checking if the first element is a cons cell
       if ((reinterpret_cast<u64>(val) & 7) == CONS)
       {
-         // cout<<"when cons...";
+         // cout << "when cons...";
          // print_val(val);
 
          // making recursive call to handle the nested list
@@ -268,7 +295,7 @@ extern "C"
       else
       {
          // handling the case, when it's not a cons cell
-         // cout<<"when not-cons...";
+         // cout << "when not-cons...";
          // print_val(val);
 
          void *new_val = val;
@@ -284,21 +311,12 @@ extern "C"
     *  */
    void *apply_prim_car(void *lst)
    {
-      // cout << "In apply_prim_car";
-      // print_val(lst);
-
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      if ((temp_lst & 7) != CONS)
-      {
-         cout << "Error in apply_prim_car: expected a cons cell!" << endl;
-         exit(0);
-      }
-      else
-      {
-         u64 *cell = decode_cons(temp_lst);
-         return prim_car(reinterpret_cast<void *>(cell[0]));
-      }
+      assert((temp_lst & 7) == CONS, "Error in apply_prim_car: expected a cons cell!");
+
+      u64 *cell = decode_cons(temp_lst);
+      return prim_car(reinterpret_cast<void *>(cell[0]));
    }
 
    /**
@@ -310,16 +328,10 @@ extern "C"
    {
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      if ((temp_lst & 7) != CONS)
-      {
-         cout << "Error in apply_prim_cdr: expected a cons cell!" << endl;
-         exit(0);
-      }
-      else
-      {
-         u64 *cell = decode_cons(temp_lst);
-         return prim_cdr(reinterpret_cast<void *>(cell[0]));
-      }
+      assert((temp_lst & 7) == CONS, "Error in apply_prim_cdr: expected a cons cell!");
+
+      u64 *cell = decode_cons(temp_lst);
+      return prim_cdr(reinterpret_cast<void *>(cell[0]));
    }
 
    /**
@@ -327,34 +339,29 @@ extern "C"
     * @param lst argument list (a cons cell)
     * @return the cdr value of car of that cell
     *  */
-   void* apply_prim_cdar(void* lst){
+   void *apply_prim_cdar(void *lst)
+   {
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      if ((temp_lst & 7) != CONS)
-      {
-         cout << "Error in apply_prim_cdar: expected a cons cell!" << endl;
-         exit(0);
-      }
-      else
-      {
-         u64 *cell = decode_cons(temp_lst);
-         return prim_cdr(prim_car(reinterpret_cast<void *>(cell[0])));
-      }
+      assert((temp_lst & 7) == CONS, "Error in apply_prim_cdar: expected a cons cell!");
+
+      u64 *cell = decode_cons(temp_lst);
+      return prim_cdr(prim_car(reinterpret_cast<void *>(cell[0])));
    }
 
    /**
     * This function performs the specified comparison operation on the given arguments.
     * @param lst argument list (a cons cell containing the arguments)
-    * @param cmp_op comparison operator (a function pointer that takes two u64 values and returns a boolean)
+    * @param cmp_op comparison operator (a pointer to a function that takes two u64 values and returns a boolean)
     * @return true if the comparison is true, false otherwise!
     */
    void *apply_comparison_op(void *lst, bool (*cmp_op)(u64, u64))
    {
+      assert(prim_cdr(prim_cdr(lst)) == NULL_VALUE,
+             "Error in apply_comparison_op: argument length is greater than 2!");
+
       void *val1 = prim_car(lst);
       void *val2 = prim_car(prim_cdr(lst));
-
-      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
-         cout << "Error in apply_comparison_op: argument length is greater than 2.";
 
       u64 car = reinterpret_cast<u64>(val1);
       u64 cdr = reinterpret_cast<u64>(val2);
@@ -389,7 +396,8 @@ extern "C"
 
    /**
     * This function performs >= operation
-    * @param lst argument list (a cons cell)
+    * @param x car value
+    * @param y cdr value
     * @return true if car is greater than or equal the cdr value, false otherwise!
     */
    bool cmp_op_ge(u64 x, u64 y)
@@ -399,7 +407,8 @@ extern "C"
 
    /**
     * This function performs <= operation
-    * @param lst argument list (a cons cell)
+    * @param x car value
+    * @param y cdr value
     * @return true if car is less than or equal the cdr value, false otherwise!
     */
    bool cmp_op_le(u64 x, u64 y)
@@ -409,7 +418,8 @@ extern "C"
 
    /**
     * This function performs < operation
-    * @param lst argument list (a cons cell)
+    * @param x car value
+    * @param y cdr value
     * @return true if car is less than the cdr value, false otherwise!
     */
    bool cmp_op_less(u64 x, u64 y)
@@ -419,7 +429,8 @@ extern "C"
 
    /**
     * This function performs > operation
-    * @param lst argument list (a cons cell)
+    * @param x car value
+    * @param y cdr value
     * @return true if car is greater than the cdr value, false otherwise!
     */
    bool cmp_op_greater(u64 x, u64 y)
@@ -429,7 +440,8 @@ extern "C"
 
    /**
     * This function performs = operation
-    * @param lst argument list (a cons cell)
+    * @param x car value
+    * @param y cdr value
     * @return true if car is equal(==) to the cdr value, false otherwise!
     */
    bool cmp_op_equal(u64 x, u64 y)
@@ -439,7 +451,7 @@ extern "C"
 
    /**
     * This function performs odd? operation
-    * @param lst one argument list (a cons cell)
+    * @param x value we will be performing the operation on
     * @return true if the value is odd, false otherwise!
     *  */
    bool apply_op_odd(u64 x)
@@ -449,7 +461,7 @@ extern "C"
 
    /**
     * This function performs even? operation
-    * @param lst one argument list (a cons cell)
+    * @param x value we will be performing the operation on
     * @return true if the value is even, false otherwise!
     *  */
    bool apply_op_even(u64 x)
@@ -459,7 +471,7 @@ extern "C"
 
    /**
     * This function performs positive? operation
-    * @param lst one argument list (a cons cell)
+    * @param x value we will be performing the operation on
     * @return true if the value is positive, false otherwise!
     *  */
    bool apply_op_positive(u64 x)
@@ -469,7 +481,7 @@ extern "C"
 
    /**
     * This function performs negative? operation
-    * @param lst one argument list (a cons cell)
+    * @param x value we will be performing the operation on
     * @return true if the value is negative, false otherwise!
     *  */
    bool apply_op_negative(u64 x)
@@ -486,21 +498,16 @@ extern "C"
    {
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      if ((temp_lst & 7) != CONS)
-      {
-         cout << "Error in apply_prim_null_u63: expected a cons cell!" << endl;
-         exit(0);
-      }
-      else
-      {
-         u64 *cell = decode_cons(temp_lst);
-         u64 car = cell[0];
+      assert((temp_lst & 7) == CONS,
+             "Error in apply_prim_null_u63: expected a cons cell!");
 
-         if (car == NULL_VALUE)
-            return reinterpret_cast<void *>(encode_bool((s32)1));
-         else
-            return reinterpret_cast<void *>(encode_bool((s32)0));
-      }
+      u64 *cell = decode_cons(temp_lst);
+      u64 car = cell[0];
+
+      if (car == NULL_VALUE)
+         return reinterpret_cast<void *>(encode_bool((s32)1));
+      else
+         return reinterpret_cast<void *>(encode_bool((s32)0));
    }
 
    /**
@@ -510,11 +517,11 @@ extern "C"
     *  */
    void *apply_prim_eq_u63(void *lst)
    {
+      assert(prim_cdr(prim_cdr(lst)) == NULL_VALUE,
+             "Error in apply_prim_eq_u63: argument length is greater than 2!");
+
       void *val1 = prim_car(lst);
       void *val2 = prim_car(prim_cdr(lst));
-
-      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
-         cout << "Error in apply_prim_eq_u63: argument length is greater than 2.";
 
       u64 car = reinterpret_cast<u64>(val1);
       u64 cdr = reinterpret_cast<u64>(val2);
@@ -542,11 +549,11 @@ extern "C"
     *  */
    void *apply_prim_equal_u63(void *lst)
    {
+      assert(prim_cdr(prim_cdr(lst)) == NULL_VALUE,
+             "Error in apply_prim_equal_u63: argument length is greater than 2!");
+
       void *val1 = prim_car(lst);
       void *val2 = prim_car(prim_cdr(lst));
-
-      if (prim_cdr(prim_cdr(lst)) != NULL_VALUE)
-         cout << "Error in apply_prim_equal_u63: argument length is greater than 2.";
 
       u64 car = reinterpret_cast<u64>(val1);
       u64 cdr = reinterpret_cast<u64>(val2);
@@ -584,7 +591,7 @@ extern "C"
     *  */
    void *apply_prim__u62(void *lst)
    {
-      return apply_comparison_op(lst, &cmp_op_greater); // for < operation
+      return apply_comparison_op(lst, &cmp_op_greater); // for > operation
    }
 
    /**
@@ -671,10 +678,12 @@ extern "C"
       {
          u64 *cell = decode_cons(ptr);
 
-         // cout << "in apply prim > Car: " << decode_int(pp[0]) << endl;
-         // cout << "in apply prim > Cdr: " << decode_int(pp[1]) << endl;
+         u64 temp_val = reinterpret_cast<u64>(cell[0]);
 
-         sum += decode_int(cell[0]);
+         assert((temp_val & 7) == INT,
+                "Error in apply_prim_equal_u63: argument is not an Integer!");
+
+         sum += decode_int(temp_val);
          ptr = cell[1];
       }
 
@@ -696,7 +705,12 @@ extern "C"
          return reinterpret_cast<void *>(encode_int((s32)0));
       else
       {
-         u64 res = decode_int(cell[0]); // get car value
+         u64 temp_val = reinterpret_cast<u64>(cell[0]);
+
+         assert((temp_val & 7) == INT,
+                "Error in apply_prim__u42: argument is not an Integer!");
+
+         u64 res = decode_int(temp_val); // get car value
 
          // if car is zero return 0
          if (res == 0)
@@ -710,10 +724,12 @@ extern "C"
             {
                u64 *temp_cell = decode_cons(ptr);
 
-               u64 car = temp_cell[0];
-               u64 cdr = temp_cell[1];
+               temp_val = reinterpret_cast<u64>(temp_cell[0]);
 
-               temp_res *= decode_int(temp_cell[0]);
+               assert((temp_val & 7) == INT,
+                      "Error in apply_prim__u42: argument is not an Integer!");
+
+               temp_res *= decode_int(temp_val);
                ptr = temp_cell[1];
             }
 
@@ -732,10 +748,14 @@ extern "C"
       u64 ptr = reinterpret_cast<u64>(val);
 
       u64 *cell = decode_cons(ptr);
-      u64 car = cell[0];
+      u64 temp_val = reinterpret_cast<u64>(cell[0]);
+
+      assert((temp_val & 7) == INT,
+             "Error in apply_prim__u45: argument is not an Integer!");
+
       u64 cdr = cell[1];
 
-      u64 car_value = decode_int(car);
+      u64 car_value = decode_int(temp_val);
 
       if (cdr == NULL_VALUE)
       {
@@ -758,11 +778,12 @@ extern "C"
    }
 
    /* helper function to count the length of a list */
-   int length_counter(void* lst){
+   int length_counter(void *lst)
+   {
       // print_val(lst);
 
       if (lst == NULL_VALUE)
-         return 0;   
+         return 0;
 
       void *val = prim_car(lst);
       void *rest = prim_cdr(lst);
@@ -776,7 +797,7 @@ extern "C"
     * @param lst is a list
     * @return the length of the list
     */
-   void* apply_prim_length(void *lst)
+   void *apply_prim_length(void *lst)
    {
       return reinterpret_cast<void *>(encode_int((s32)length_counter(prim_car(lst))));
    }
@@ -921,7 +942,7 @@ extern "C"
       // cout << prim_car(arglist) << endl;
 
       print_val(prim_car(arglist));
-      exit(0);
+      exit(1);
    }
 
    // void *halt;
@@ -941,7 +962,7 @@ extern "C"
       cout << "Final return value: ";
       print_val(prim_car(prim_cdr(arglist)));
 
-      exit(0);
+      exit(1);
    }
    /* int main() {
      int value = 1001;
