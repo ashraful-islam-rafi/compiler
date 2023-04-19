@@ -239,12 +239,20 @@
 
 (define test-cases-for-final-output
   (list
-  ;  '(+ 1 2 3 (- 5 1) 10 (+ 1 4))
-    '(* 2 3 (+ 3 2) (cons 1 2) (- 4 1))
+   ;  '(+ 1 2 3 (- 5 (- 4 1)) 10 (+ 1 4))
+   ; '(* 2 3 (+ 3 2) (cons 1 2) (- 4 1))
    ; '(* 3)
    ;  '(- 5)
 
-   ; '(+ (if 1 2 #f) 2)
+   ;  '(+ (if 100 2 #f) 2)
+   ;  '(if "asdfa" 2 #f)
+   '(if (negative? 500)
+        2
+        (if (positive? 100)
+            (if (even? 3)
+                "laye3-true"
+                "layer3-false")
+            "layer2-false"))
    ;  '(cons 1 2)
    ;  '(cons 1 2 3)
    ; '(car '((2 3) (4 5)))
@@ -252,23 +260,23 @@
    ; '(cdr 1)
    ;  '(cons (cons 1 2) 30000)
    ;  '(cons (cons 1 2) 30000)
-   ;  '(car (cons (cons 1 2) (cons 30000 '())))
+   ; '(car (cons (cons 1 2) (cons 30000 '())))
    ;  '(car (cdr (cdr '((2 3) (4 5) 6)))) ;=> 6
    ;  '(cdr (car (list (list 1) (list 1)))) ; => '()
    ;  '(cdar (list (list 1) (list 1))) ; => '()
 
-  ;  '(null? '(1 2 3))
-  ;  '(null? '())
+   ;  '(null? '(1 2 3))
+   ;  '(null? '())
    ;  '(eq? 200 100)
    ;  '(eq? (* 6 7) 42)
-  ;  '(equal? 200 100 20)
+   ;  '(equal? 200 100 20)
    ; '(equal? (* 6 7) 42)
    ;  '(equal? 'yes 'no)
    ;  '(equal? "yes" "yes")
 
    ;  '(= 3 2)
    ; '(= 4 4)
-  ;  '(> 4 1)
+   ;  '(> 4 1)
    ; '(> 4 5)
    ; '(< 3 4)
    ; '(< 4 4)
@@ -279,17 +287,17 @@
 
    ;  '(cons 1 (cons 2 (cons 3 (cons 4 '()))))
    ; '(list 2 3 (list 4 (list 5 6) 7) 8)
-   ;  '(length (list 1 2 30))
+   ; '(length (list 1 2 30))
    ;  '(length (list))
 
    ;  '(odd? 1)
    ;  '(odd? 2)
    ;  '(even? 2)
    ;  '(even? 21)
-   ;  '(positive? 500)
+   ; '(positive? 500)
    ;  '(positive? -500)
-   ;  '(negative? 500)
-   ;  '(negative? -500)
+   ; '(negative? 500)
+   ; '(negative? -500)
 
    ; '(if (= 2 1) #t #f)
    ; '(if (= 2 2) #t #f)

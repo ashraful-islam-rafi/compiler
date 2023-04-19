@@ -56,7 +56,6 @@ extern "C"
 
    string decode_string(u64 v)
    {
-      // string *decoded = ((string *)MASK(v));
       string *decoded = reinterpret_cast<string *>(MASK(v));
       string str = *decoded;
       delete decoded;
@@ -210,18 +209,11 @@ extern "C"
    {
       u64 ptr = reinterpret_cast<u64>(val);
 
-      // cout<< "tag: " << (ptr & 7)<<endl;
-      // cout<< "first chk: " << ((ptr & 7) == CONS) <<endl;
+      // cout << "tag: " << (ptr & 7) << endl;
+      // cout << "first chk: " << ((ptr & 7) == CONS) << endl;
 
-      // if ((ptr & 7) != CONS)
-      // {
-      //    cout << "Error in prim_car: expected a cons cell!" << endl;
-      //    exit(1);
-      // }
-
-      // cout<< "second chk: " << ((ptr & 7) == CONS) <<endl;
-
-      assert((ptr & 7) == CONS, "Error in prim_car: expected a cons cell!");
+      assert((ptr & 7) == CONS,
+             "Error in prim_car: expected a cons cell!");
 
       u64 *cell = decode_cons(ptr);
       return reinterpret_cast<void *>(cell[0]);
@@ -236,7 +228,8 @@ extern "C"
    {
       u64 ptr = reinterpret_cast<u64>(val);
 
-      assert((ptr & 7) == CONS, "Error in prim_cdr: expected a cons cell!");
+      assert((ptr & 7) == CONS,
+             "Error in prim_cdr: expected a cons cell!");
 
       u64 *cell = decode_cons(ptr);
       return reinterpret_cast<void *>(cell[1]);
@@ -265,19 +258,11 @@ extern "C"
     *  */
    void *apply_prim_list(void *lst)
    {
-      // cout << "In apply_prim_list";
-      // print_val(lst);
-
       // checking if lst is empty
       if (lst == NULL_VALUE)
-      {
-         // cout<< "in null case"<<endl;
          return NULL_VALUE;
-      }
 
-      // geting the first element
       void *val = prim_car(lst);
-      // geting the rest of the list
       void *rest = prim_cdr(lst);
 
       // checking if the first element is a cons cell
@@ -313,7 +298,8 @@ extern "C"
    {
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      assert((temp_lst & 7) == CONS, "Error in apply_prim_car: expected a cons cell!");
+      assert((temp_lst & 7) == CONS,
+             "Error in apply_prim_car: expected a cons cell!");
 
       u64 *cell = decode_cons(temp_lst);
       return prim_car(reinterpret_cast<void *>(cell[0]));
@@ -328,7 +314,8 @@ extern "C"
    {
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      assert((temp_lst & 7) == CONS, "Error in apply_prim_cdr: expected a cons cell!");
+      assert((temp_lst & 7) == CONS,
+             "Error in apply_prim_cdr: expected a cons cell!");
 
       u64 *cell = decode_cons(temp_lst);
       return prim_cdr(reinterpret_cast<void *>(cell[0]));
@@ -343,7 +330,8 @@ extern "C"
    {
       u64 temp_lst = reinterpret_cast<u64>(lst);
 
-      assert((temp_lst & 7) == CONS, "Error in apply_prim_cdar: expected a cons cell!");
+      assert((temp_lst & 7) == CONS,
+             "Error in apply_prim_cdar: expected a cons cell!");
 
       u64 *cell = decode_cons(temp_lst);
       return prim_cdr(prim_car(reinterpret_cast<void *>(cell[0])));
@@ -402,6 +390,12 @@ extern "C"
     */
    bool cmp_op_ge(u64 x, u64 y)
    {
+      assert((x & 7) == INT,
+             "Error in cmp_op_ge: expected Integer values!");
+
+      assert((y & 7) == INT,
+             "Error in cmp_op_ge: expected Integer values!");
+
       return x >= y;
    }
 
@@ -413,6 +407,12 @@ extern "C"
     */
    bool cmp_op_le(u64 x, u64 y)
    {
+      assert((x & 7) == INT,
+             "Error in cmp_op_le: expected Integer values!");
+
+      assert((y & 7) == INT,
+             "Error in cmp_op_le: expected Integer values!");
+
       return x <= y;
    }
 
@@ -424,6 +424,12 @@ extern "C"
     */
    bool cmp_op_less(u64 x, u64 y)
    {
+      assert((x & 7) == INT,
+             "Error in cmp_op_less: expected Integer values!");
+
+      assert((y & 7) == INT,
+             "Error in cmp_op_less: expected Integer values!");
+
       return x < y;
    }
 
@@ -435,6 +441,12 @@ extern "C"
     */
    bool cmp_op_greater(u64 x, u64 y)
    {
+      assert((x & 7) == INT,
+             "Error in cmp_op_greater: expected Integer values!");
+
+      assert((y & 7) == INT,
+             "Error in cmp_op_greater: expected Integer values!");
+
       return x > y;
    }
 
@@ -446,6 +458,12 @@ extern "C"
     */
    bool cmp_op_equal(u64 x, u64 y)
    {
+      assert((x & 7) == INT,
+             "Error in cmp_op_equal: expected Integer values!");
+
+      assert((y & 7) == INT,
+             "Error in cmp_op_equal: expected Integer values!");
+
       return x == y;
    }
 
@@ -456,6 +474,9 @@ extern "C"
     *  */
    bool apply_op_odd(u64 x)
    {
+      assert((x & 7) == INT,
+             "Error in apply_op_odd: expected an Integer value!");
+
       return decode_int(x) % 2 != 0;
    }
 
@@ -466,6 +487,9 @@ extern "C"
     *  */
    bool apply_op_even(u64 x)
    {
+      assert((x & 7) == INT,
+             "Error in apply_op_even: expected an Integer value!");
+
       return decode_int(x) % 2 == 0;
    }
 
@@ -476,6 +500,9 @@ extern "C"
     *  */
    bool apply_op_positive(u64 x)
    {
+      assert((x & 7) == INT,
+             "Error in apply_op_positive: expected an Integer value!");
+
       return decode_int(x) > 0 ? 1 : 0;
    }
 
@@ -486,6 +513,9 @@ extern "C"
     *  */
    bool apply_op_negative(u64 x)
    {
+      assert((x & 7) == INT,
+             "Error in apply_op_negative: expected an Integer value!");
+
       return decode_int(x) < 0 ? 1 : 0;
    }
 
@@ -769,7 +799,12 @@ extern "C"
       {
          u64 *temp_cell = decode_cons(cdr);
 
-         result -= decode_int(temp_cell[0]);
+         temp_val = reinterpret_cast<u64>(temp_cell[0]);
+
+         assert((temp_val & 7) == INT,
+                "Error in apply_prim__u45: argument is not an Integer!");
+
+         result -= decode_int(temp_val);
 
          cdr = temp_cell[1];
       }
@@ -780,8 +815,6 @@ extern "C"
    /* helper function to count the length of a list */
    int length_counter(void *lst)
    {
-      // print_val(lst);
-
       if (lst == NULL_VALUE)
          return 0;
 
@@ -839,6 +872,9 @@ extern "C"
       u64 ptr = reinterpret_cast<u64>(fptr);
       u64 temp_env = reinterpret_cast<u64>(env);
 
+      assert((temp_env & 7) == ENV,
+             "Error in make_closure: runtime error expected an env array!");
+
       obj[0] = ptr;
       obj[1] = temp_env;
 
@@ -857,6 +893,10 @@ extern "C"
       // cout << "position: " << idx << " val: " << val << endl;
 
       u64 env_arr = reinterpret_cast<u64>(arr);
+
+      assert((env_arr & 7) == ENV,
+             "Error in set_env: runtime error expected an env array!");
+
       u64 value = reinterpret_cast<u64>(val);
 
       u64 idx_val = decode_int(idx) + 1;
@@ -877,6 +917,10 @@ extern "C"
    void *get_env_value(void *env, u64 idx)
    {
       u64 env_arr = reinterpret_cast<u64>(env);
+
+      assert((env_arr & 7) == ENV,
+             "Error in get_env_value: runtime error expected an env array!");
+
       u64 idx_val = decode_int(idx) + 1;
 
       // cout<<"ArrLen: "<<sizeof(decode_env_arr(env_arr))/sizeof(decode_env_arr(env_arr)[0]) <<endl;
@@ -895,6 +939,9 @@ extern "C"
    {
       u64 temp_val = reinterpret_cast<u64>(val);
 
+      assert((temp_val & 7) == CLO,
+             "Error in get_env: expected a cons cell!");
+
       u64 *env = decode_clo(temp_val);
       return reinterpret_cast<void *>(env[1]);
 
@@ -909,6 +956,10 @@ extern "C"
    void *get_closure_ptr(void *val)
    {
       u64 obj = reinterpret_cast<u64>(val);
+
+      assert((obj & 7) == CLO,
+             "Error in get_closure_ptr: expected a cons cell!");
+
       u64 *clo_obj = decode_clo(obj);
 
       return reinterpret_cast<void *>(clo_obj[0]);
@@ -921,10 +972,15 @@ extern "C"
    void *is_true(void *val)
    {
       u64 obj = reinterpret_cast<u64>(val);
-      if (decode_bool(obj) == 0)
-         return reinterpret_cast<void *>(0);
-      else
-         return reinterpret_cast<void *>(1);
+
+      if ((obj & 7) == BOOLEAN)
+      {
+         if (decode_bool(obj) == 0)
+            return reinterpret_cast<void *>(0);
+         else
+            return reinterpret_cast<void *>(1);
+      }
+      else return reinterpret_cast<void *>(1);
    }
 
    /**
@@ -942,7 +998,7 @@ extern "C"
       // cout << prim_car(arglist) << endl;
 
       print_val(prim_car(arglist));
-      exit(1);
+      exit(0);
    }
 
    // void *halt;

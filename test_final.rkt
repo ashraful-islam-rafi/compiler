@@ -22,6 +22,13 @@
    '(- 5)
 
    '(+ (if 1 2 #f) 2)
+   '(if (negative? 500)
+        2
+        (if (positive? 100)
+            (if (even? 3)
+                "laye3-true"
+                "layer3-false")
+            "layer2-false")) ;=> layer3-false
    '(cons 1 2)
    '(car '((2 3) (4 5)))
    '(cdr '((2 3) (4 5)))
