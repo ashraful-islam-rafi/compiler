@@ -32,9 +32,7 @@
        (normalize body k)]
       
       #;[`(let ([,xs ,rhss] ...) ,body)
-         (k `(let ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]
-
-     
+         (k `(let ,(map (λ (x rhs) `(,x ,(normalize-term rhs))) xs rhss) ,(normalize-term body)))]     
       
       [`(let ([,xs ,rhs] . ,rest) ,body)
        #;(normalize rhs (λ (param)

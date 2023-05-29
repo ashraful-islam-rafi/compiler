@@ -9,7 +9,7 @@
     [(or (== 'lambda) (== 'λ)) #t]
     [else #f]))
 
-
+; so that every λ becomes variadic
 (define (simplify-λ exp)
   ; (displayln (~a "exp: " exp))
   (match exp
@@ -80,17 +80,17 @@
                [acc '()])
 
       ; (displayln (~a "ae_list: " ae_lst " acc: " acc "\n"))
-      (match ae_lst
-        [(? null? ae_lst) (proc acc)]
-        [`(,aes ...)
+      (cond
+        [(null? ae_lst) (proc acc)]
+        [(pair? ae_lst)
          (cond
-           [(symbol? (car aes))
-            (loop (cdr aes) (append acc `(,(car aes))))]
+           [(symbol? (car ae_lst))
+            (loop (cdr ae_lst) (append acc `(,(car ae_lst))))]
            [else
             (define newarg (gensym 'id))
             (let-bound-program
-             `(let ([,newarg ,(car aes)])
-                ,(loop (cdr aes) (append acc `(,newarg)))))
+             `(let ([,newarg ,(car ae_lst)])
+                ,(loop (cdr ae_lst) (append acc `(,newarg)))))
             ])])))
 
   (match exp
@@ -115,10 +115,10 @@
     [`(let ([,lhs ,val]) ,elet)
      `(let ([,lhs ,val]) ,(let-bound-program elet))]
 
-    [`(apply ,f ,args)
-     (normalize-ae (λ (args) `(apply ,@args)) (list f args))]
+    [`(apply ,params ...) ; (params ...) => (,f ,args)
+     (normalize-ae (λ (args) `(apply ,@args)) params)]
 
-    [`(if ,grd ... ,texp ,fexp)
+    [`(if ,grd ... ,texp ,fexp) ; converting grd to a list => (grd ...) ;)
      (normalize-ae (λ (args)
                      `(if ,@args
                           ,(let-bound-program texp)
@@ -194,7 +194,7 @@
              final_vars_set
              (cons `(proc ,code_ptr ,env_name ,args ,new-body) temp_procs2))]
 
-      [`(let ([,lhs (λ (,args ...) ,lam-body)]) ,let-body)
+      #;[`(let ([,lhs (λ (,args ...) ,lam-body)]) ,let-body)
        (define code_ptr (gensym 'ptr))
        (define env_name (gensym 'env))
 
@@ -297,8 +297,8 @@
 ; (pretty-print (closure-convert example2))
 ; (pretty-print (closure-convert '(+ 1 2)))
 
-; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '()))))))
-; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog example2))))))
+; (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 1 2)))))))
+;  (pretty-print (closure-convert (cps-convert (anf-convert (desugar (add-prims-to-prog example2))))))
 
 (define example3
   '(let ((* (λ args

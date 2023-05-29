@@ -944,8 +944,6 @@ extern "C"
 
       u64 *env = decode_clo(temp_val);
       return reinterpret_cast<void *>(env[1]);
-
-      // cout<< "tag2: " <<(((u64 *)decode_env_arr(obj))[0] & 7) << endl;
    }
 
    /**
@@ -991,6 +989,7 @@ extern "C"
    void *apply_prim_halt(void *arglist)
    {
       // cout << "In apply_prim_halt: ";
+      // print_val(arglist);
       // cout << "Final return value:";
 
       // u64 value = reinterpret_cast<u64>(prim_car(arglist));

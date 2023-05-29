@@ -9,7 +9,8 @@
 
 (define bin_file_name "cpp_program.out")
 (define cpp_file_name "cpp_program.cpp")
-(define cpp_folder_path "/mnt/6AFED73BFED6FE6F/mine/git-projects/compiler/cpp/")
+; (define cpp_folder_path "/mnt/6AFED73BFED6FE6F/mine/git-projects/compiler/cpp/")
+(define cpp_folder_path (format "~a~a" (build-path (current-directory)) "cpp/"))
 (define cpp_file (format "~a~a" cpp_folder_path cpp_file_name))
 (define bin_file (format "~a~a" cpp_folder_path bin_file_name))
 
@@ -87,6 +88,8 @@
           (let ([c (λ (x) (+ x a d))])
             (let ([f (λ (a b) (c (c (+ e d a b))))])
               (f 4 5))))))
+
+   '(let ((f (λ (x) x))) (let ((v (f f))) (v 3)))
 
    '(let* ([a 3] [b (* 2 a)]) (cons a b))
    '(letrec ([fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))]) (fact 5))

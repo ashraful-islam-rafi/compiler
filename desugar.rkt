@@ -105,9 +105,16 @@
           ;(raise `(error ,(format "invalid parameter list! ~a" improper-args)))
           ]))
 
-     (match-define (cons req opt) (extract-params improper-args))
+     ; extracting required and optional items of the improper list.
+     ; for exp, (λ (a b c . d) c), here (a b c) are required and d is optional
+     ; basically we turn the above expression to the below one:
+     ;  '(λ param_lst239095
+     ;     (let ((a (car param_lst239095)) (param_lst239095 (cdr param_lst239095)))
+     ;       (let ((b (car param_lst239095)) (param_lst239095 (cdr param_lst239095)))
+     ;         (let ((c (car param_lst239095)) (param_lst239095 (cdr param_lst239095)))
+     ;           (let ((d param_lst239095)) c)))))
 
-     (define arg-x (gensym `param_lst))
+     (match-define (cons req opt) (extract-params improper-args))
 
      (define (simplify-lambda arg-x req opt body)
        (let loop ([req req])
@@ -119,8 +126,9 @@
                    [,arg-x (cdr ,arg-x)])
                ,(loop (cdr req)))])))
 
-      `(λ ,arg-x ,(simplify-lambda arg-x req opt body))]
+     (define arg-x (gensym `param_lst)) ;getting a fresh variable
 
+     `(λ ,arg-x ,(simplify-lambda arg-x req opt body))]
 
 
     ; for define/top-level
@@ -223,3 +231,6 @@
                                  rhs
                                  (cons (car lhs)
                                        (append1 (cdr lhs) rhs)))))))
+
+; (pretty-print (desugar `(lambda (* lst2 . lst) (apply-prim * lst))))
+; (pretty-print (desugar `(lambda (- . lst) (apply-prim - lst))))

@@ -2,9 +2,10 @@
 
 (provide cek-interp)
 
-(require "parser.rkt")
+(require "desugar.rkt" "prims.rkt" "anf-convert.rkt" "cps-convert.rkt")
 
 (require (rename-in racket/base (eval racket-eval)))
+
 
 ;(define default-prims '(* + - / expt = car cdr cons equal? null?))
 ;(define default-prims '(* + - / expt = > < car cdr cons list equal? null? odd? even? positive? negative? halt))
@@ -28,10 +29,10 @@
 
   (define (eval exp env kont)
     ;(displayln (~a "\n>>>eval : " (list '--exp: exp '--env: env '--kont: kont)))
-    (displayln (~a "\n>>>eval :exp:"))
-    (pretty-print exp)
-    (displayln (~a "\n>eval : env:"))
-    (pretty-print env)
+    ; (displayln (~a "\n>>>eval :exp:"))
+    ; (pretty-print exp)
+    ; (displayln (~a "\n>eval : env:"))
+    ; (pretty-print env)
     (match exp
       	[(or (? number?) (? boolean?))
          	(ret exp kont)]
@@ -41,7 +42,7 @@
 
       	[(? symbol? x)
          	(ret (hash-ref env x
-                               					(λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
+                               (λ () (raise `(error ,(format "Undefined variable: ~a" x)))))
                      		kont)]
 
       	[`(if ,grd, texp, fexp)
@@ -78,8 +79,8 @@
                         	]
 
       	[`(apply-prim ,opr ,x)
-         	(when (or (equal? 'car opr) (equal? 'cdr opr) (equal? '+ opr))
-                  		(displayln (~a "env-hash: " (hash-ref env x))))
+         	#;(when (or (equal? 'car opr) (equal? 'cdr opr) (equal? '+ opr))
+                    		(displayln (~a "env-hash: " (hash-ref env x))))
                 	(ret (racket-apply (racket-eval opr (make-base-namespace)) (hash-ref env x)) kont)]
 
       	[`(,ef ,ea-list ...)
@@ -89,7 +90,7 @@
       	[else (raise `(Error occured in eval function!...State: ,exp ,env ,kont))]))
 
   (define (ret val kont)
-    (displayln (~a "\n>>>ret  : " (list '--val: val '--kont: kont)))
+    ; (displayln (~a "\n>>>ret  : " (list '--val: val '--kont: kont)))
     (match kont
       	['mt val]
 
@@ -124,8 +125,8 @@
 
       	[`(app-k ,v-list () ,env ,sub_kont)
          	(define vals (append v-list `(,val)))
-                	(displayln (~a "vals: " vals))
-                        	(apply (car vals) (cdr vals) sub_kont)]
+                	;(displayln (~a "vals: " vals))
+                	(apply (car vals) (cdr vals) sub_kont)]
 
       	[`(app-k ,v-list (,e0 ,e-list ...) ,env ,sub_kont)
          	(if (equal? 'halt e0)
@@ -135,21 +136,19 @@
       	[else (raise `(Error occured in ret function!...State: ,val ,kont))]))
 
   (define (apply vf va-list kont)
-    (displayln (~a "\n>>>apply: " (list '--vf: vf '--va-list: va-list '--kont: kont)))
+    ; (displayln (~a "\n>>>apply: " (list '--vf: vf '--va-list: va-list '--kont: kont)))
     ;(pretty-print vf)
     ;(pretty-print va-list)
     ;(pretty-print kont)
     (match vf
       	[`(clo (,(? λ-or-lambda?) ,params ,eb) ,env)
-         	(displayln (~a ">>>apply-params: " params))
-                	(displayln (~a ">>>apply-eb: " eb))
-                        	(if (symbol? params)
-                                    		(eval eb (hash-set env params va-list) kont)
-                                                		(if (= (length params) (length va-list))
-                                                                    			(eval eb
-                                                                                              					(foldl (lambda (x va env) (hash-set env x va)) env params va-list)
-                                                                                                                                					kont)
-                                                                                        			(raise `(Error number of arguments do not match))))]
+         	; (displayln (~a ">>>apply-params: " params))
+         	; (displayln (~a ">>>apply-eb: " eb))
+         	(if (symbol? params)
+                    (eval eb (hash-set env params va-list) kont)
+                    (if (= (length params) (length va-list))
+                        (eval eb (foldl (lambda (x va env) (hash-set env x va)) env params va-list) kont)
+                        (raise `(Error number of arguments do not match))))]
 
       	[`(kont ,this_kont)
          	(if (= 1 (length va-list))
@@ -161,9 +160,13 @@
   (eval prog prims 'mt))
 
 ; test interpreter
+; (define test-1 (cps-convert (anf-convert (desugar (add-prims-to-prog '(+ 2 (* 3 2)))))))
+(define test-1 (anf-convert (desugar (add-prims-to-prog '(+ 2 1)))))
+(cek-interp test-1)
+
 ;(cek-interp '(let ((t6345 (list 1 4))) (null? halt t6345)))
 ; (cek-interp '(+ halt 2 1))
-(cek-interp '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))
+; (cek-interp '(((call/cc (λ (x) ((x x) x))) (λ (y) y)) #t))
 ;(cek-interp '(car (list 4 1)))
 ;(cek-interp '(+ 420 (* 2 (/ 3 3))))
 #;(cek-interp '(let ((null?

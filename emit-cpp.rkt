@@ -60,7 +60,7 @@
        ]
 
       [`(let ([,lhs (new-closure ,ptr ,args ...)]) ,letbody)
-       (define arglength (length args) )
+       (define arglength (length args))
 
        ; new-closure
        (append-line filename "\n//creating new closure instance")
@@ -89,7 +89,7 @@
        (when (> (+ arglength 1) 1) (append-line filename "\n//setting env list"))
 
        (for ([i (in-range 1 (+ arglength 1))]
-                  [item args])
+             [item args])
 
          (append-line
           filename

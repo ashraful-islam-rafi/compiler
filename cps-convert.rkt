@@ -9,17 +9,7 @@
     (match expr
       [`(λ . ,_) `(,c '() ,(M expr))]
       [ (or (? symbol?) (? number?) (? boolean?) (? string?))  `(,c '() ,(M expr))]
-      [`(quote ,datum) `(,c '() ',datum)]
-
-      ;  [`(λ . ,_) `(,c ,expr ,(M expr))]
-      ; [ (or (? symbol? x) (? number? x) (? boolean? x) (? string? x))  `(,c ,x ,(M expr))]
-      ; [`(quote ,datum) `(,c ,expr ',datum)]
-
-
-      ; [`(λ . ,_) `(,c  ,(M expr))]
-      ; [ (or (? symbol?) (? number?) (? boolean?) (? string?))  `(,c  ,(M expr))]
-      ; [`(quote ,datum) `(,c ',datum)]
-
+      [`(quote ,datum) `(,c '() ',datum)] ; or `',datum? probably not, right? as of now works!
 
       [`(apply-prim ,op ,args)
        (define prm (gensym 'prm))
@@ -74,18 +64,11 @@
        (define $k (gensym 'kkont))
        (define newarg (gensym var))
 
-      ;to avoid name conflict during cpp emision
-      `(λ ,newarg
+       ;to avoid name conflict during cpp emision
+       `(λ ,newarg
           (let ([,$k (prim car ,newarg)])
             (let ([,var (prim cdr ,newarg)])
-              ,(T-c body $k))))
-
-      ;  `(λ ,var
-      ;     (let ([,$k (prim car ,var)])
-      ;       (let ([,var (prim cdr ,var)])
-      ;         ,(T-c body $k))))
-              
-              ]
+              ,(T-c body $k))))]
 
       ;handle other atomic values
       [(or (? symbol?) (? number?) (? boolean?) (? string?)) expr]
@@ -121,19 +104,19 @@
 ;(cps-convert (anf-convert (desugar (add-prims-to-prog '(apply (λ (a b c) b) (list 1 (list 5 6) 4))))))
 ; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(map + (list 1 2)))))))
 ;(pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(map1 (lambda (x) (+ 1 x)) (list 1 2)))))))
-#;(pretty-print  (cps-convert '(let ((* (λ args (apply-prim * args))))
-                                 (let ((+ (λ args (apply-prim + args))))
-                                   (let ((Ycomb
-                                          ((λ (x) (x x))
-                                           (λ (g)
-                                             (λ (f)
-                                               (f
-                                                (λ vs
-                                                  (let ((t6370 (g g)))
-                                                    (let ((t6371 (t6370 f)))
-                                                      (apply t6371 vs))))))))))
+; (pretty-print  (cps-convert '(let ((car (λ args (apply-prim car args))))
+;                                  (let ((+ (λ args (apply-prim + args))))
+;                                    (let ((Ycomb
+;                                           ((λ (x) (x x))
+;                                            (λ (g)
+;                                              (λ (f)
+;                                                (f
+;                                                 (λ vs
+;                                                   (let ((t6370 (g g)))
+;                                                     (let ((t6371 (t6370 f)))
+;                                                       (apply t6371 vs))))))))))
 
-                                     (+ 2 3 5))))))
+;                                      (+ 2 3 5))))))
 
 (define example
   '(lambda (f)
@@ -142,3 +125,24 @@
          (f x z a)))))
 
 ; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog example)))))
+; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(let ([x 42]) (+ x 10)))))))
+; (pretty-print (cps-convert (anf-convert (desugar '(let ((f (λ (x) x))) ((f f) 3))))))
+
+; (pretty-print (anf-convert (desugar '(let ((f (λ (x) x))) ((f f) 3)))))
+; (pretty-print (cps-convert (anf-convert (desugar '(let ((f (λ (x) x))) ((f f) 3))))))
+; (pretty-print (cps-convert (anf-convert (desugar (add-prims-to-prog '(let ((f (λ (x) x))) (let ((v (f f))) (v 3))))))))
+; (pretty-print (anf-convert (desugar (add-prims-to-prog '(let ((f (λ (x) x))) (let ((v (f f))) (v 3)))))))
+; (pretty-print (cps-convert `(let ((+ (λ args (apply-prim + args)))) '(let ((f (λ (x) x))) (let ((v (f f))) (v 3))))))
+; (pretty-print (anf-convert `(λ param_lst1550
+;                               (let ((* (car param_lst1550)) (param_lst1550 (cdr param_lst1550)))
+;                                 (let ((lst2 (car param_lst1550)) (param_lst1550 (cdr param_lst1550)))
+;                                   (let ((lst param_lst1550)) (apply-prim * lst)))))))
+
+; (pretty-print (cps-convert (anf-convert `(λ param_lst1550
+;                                            (let ((* (car param_lst1550)) (param_lst1550 (cdr param_lst1550)))
+;                                              (let ((lst2 (car param_lst1550)) (param_lst1550 (cdr param_lst1550)))
+;                                                (let ((lst param_lst1550)) (apply-prim * lst))))))))
+
+; (pretty-print (cps-convert (anf-convert `(λ param_lst3041
+;                                            (let ((- (car param_lst3041)) (param_lst3041 (cdr param_lst3041)))
+;                                              (let ((lst param_lst3041)) (apply-prim - lst)))))))
