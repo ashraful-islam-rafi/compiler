@@ -890,8 +890,6 @@ extern "C"
     */
    void *set_env(void *arr, u64 idx, void *val)
    {
-      // cout << "position: " << idx << " val: " << val << endl;
-
       u64 env_arr = reinterpret_cast<u64>(arr);
 
       assert((env_arr & 7) == ENV,
@@ -899,17 +897,21 @@ extern "C"
 
       u64 value = reinterpret_cast<u64>(val);
 
-      u64 idx_val = decode_int(idx) + 1;
+      u64 idx_val = decode_int(idx);// + 1;
+
+      // cout << "position: " << idx <<" idxval: "<< idx_val << " val: " << value << endl;
 
       // using a pointer to access the element and set its value
-      u64 *elem_ptr = &(decode_env_arr(env_arr))[idx_val];
-      *elem_ptr = value;
+      // u64 *elem_ptr = &(decode_env_arr(env_arr))[idx_val];
+      // *elem_ptr = value;
+
+      decode_env_arr(env_arr)[idx_val] = value;
 
       return reinterpret_cast<void *>(NULL_VALUE);
    }
 
    /**
-    * This function creates a closure instance (ptr + env)
+    * This function returns value from environment of a closure
     * @param env environment of closure instance
     * @param idx specific index value that we will return
     * @return the actual value that was assignemnt to the index
@@ -921,7 +923,7 @@ extern "C"
       assert((env_arr & 7) == ENV,
              "Error in get_env_value: runtime error expected an env array!");
 
-      u64 idx_val = decode_int(idx) + 1;
+      u64 idx_val = decode_int(idx);// + 1;
 
       // cout<<"ArrLen: "<<sizeof(decode_env_arr(env_arr))/sizeof(decode_env_arr(env_arr)[0]) <<endl;
 

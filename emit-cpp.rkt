@@ -8,8 +8,8 @@
 
 (define (emit-cpp proc_list)
 
-  ; defining header files
-  ; starting writting the program by replacing the old file, if exists
+  ; defining cpp header files
+  ; replace the old cpp file, if exists
   (append-line filename "#include<stdio.h>" 'replace)
   (append-line filename "#include<string.h>" )
   (append-line filename (string-append "#include " "\"header.h\""))

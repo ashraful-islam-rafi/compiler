@@ -7,7 +7,7 @@
 (define default-prims '(+ - * = > >= < <= car cdr cdar cons list length equal? eq? null? odd? even? positive? negative?)) 
 ; (define default-prims '(+ halt))
 
-; (define builtins `())
+;(define builtins `())
 (define builtins
     `(
       (Ycomb ((λ (x) (x x))
